@@ -361,6 +361,7 @@ svg#visualBlob{
   position: absolute;
   left: -4rem;
   isolation: isolate;
+  mix-blend-mode: darken;
 }
 svg#visualBlob path{
   /* fill: #BB004B; */
