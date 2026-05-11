@@ -1,13 +1,18 @@
-
-*.sass-cache
+# OS / editor
+.DS_Store
+*.log
 *.sublime-*
 *.idea
-*.log
-.DS_Store
 .idea
 
-/dist/
+# dependencies
 node_modules/
-.vscode/
-.parcel-cache
-/release/
+
+# next.js
+.next/
+out/
+
+# misc
+.env*.local
+*.tsbuildinfo
+next-env.d.ts
