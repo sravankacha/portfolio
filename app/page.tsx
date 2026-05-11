@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { profile } from "./_data/profile";
 import { projects } from "./_data/projects";
+import EmailLink from "./_components/EmailLink";
 
 export default function Home() {
   const featured = projects.slice(0, 3);
@@ -12,7 +13,7 @@ export default function Home() {
           <p className="font-mono text-xs uppercase tracking-widest text-muted mb-5">
             Hola — I am
           </p>
-          <h1 className="font-display text-5xl sm:text-6xl md:text-7xl font-medium leading-[1.05] mb-6">
+          <h1 className="font-display text-5xl sm:text-6xl md:text-7xl font-medium leading-[1.05] mb-6 text-gradient">
             Sravan
             <br />
             Kachavarapu
@@ -20,7 +21,7 @@ export default function Home() {
           <p className="inline-block font-mono text-xs px-2.5 py-1 rounded-full border border-border bg-surface text-foreground mb-6">
             {profile.tagline}
           </p>
-          <p className="text-lg text-muted leading-relaxed max-w-md">
+          <p className="text-lg text-foreground/80 leading-relaxed max-w-md">
             {profile.bio}
           </p>
           <p className="mt-6 text-sm text-muted">
@@ -29,17 +30,15 @@ export default function Home() {
           </p>
         </div>
 
-        <div
-          className="hero-motif order-first md:order-last"
-          aria-hidden="true"
-        >
-          <span />
+        <div className="morph-blob order-first md:order-last" aria-hidden="true">
+          <div className="morph-blob__halo" />
+          <div className="morph-blob__shape" />
         </div>
       </section>
 
       <section className="mb-24">
         <div className="flex items-baseline justify-between mb-6">
-          <h2 className="font-display text-3xl font-medium">
+          <h2 className="font-display text-3xl font-medium heading-accent">
             Selected projects
           </h2>
           <Link href="/projects" className="text-sm">
@@ -58,35 +57,43 @@ export default function Home() {
                   {p.context}
                 </span>
               </div>
-              <p className="text-muted leading-relaxed">{p.description}</p>
+              <p className="text-foreground/75 leading-relaxed">
+                {p.description}
+              </p>
             </li>
           ))}
         </ul>
       </section>
 
       <section>
-        <h2 className="font-display text-3xl font-medium mb-4">
+        <h2 className="font-display text-3xl font-medium heading-accent mb-4">
           Get in touch
         </h2>
-        <p className="text-muted mb-5 leading-relaxed max-w-lg">
-          Always happy to chat about design systems, accessibility, or building
-          frontends for scale.
+        <p className="text-foreground/80 mb-5 leading-relaxed max-w-lg">
+          Happy to chat about product, design systems, accessibility, or
+          building frontends for scale.
         </p>
         <ul className="flex flex-wrap gap-x-6 gap-y-2">
           <li>
-            <a href={`mailto:${profile.email}`}>{profile.email}</a>
+            <EmailLink>Email</EmailLink>
           </li>
           <li>
             <a
               href={profile.linkedin}
               target="_blank"
               rel="noopener noreferrer"
+              referrerPolicy="no-referrer"
             >
               LinkedIn
             </a>
           </li>
           <li>
-            <a href={profile.github} target="_blank" rel="noopener noreferrer">
+            <a
+              href={profile.github}
+              target="_blank"
+              rel="noopener noreferrer"
+              referrerPolicy="no-referrer"
+            >
               GitHub
             </a>
           </li>

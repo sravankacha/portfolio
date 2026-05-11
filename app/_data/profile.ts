@@ -1,12 +1,25 @@
 export const profile = {
   name: "Sravan Kachavarapu",
   tagline: "Senior Software Engineer at Meta",
-  bio: "Frontend engineer building inclusive interfaces at scale. I care about craft — accessibility, design systems, and the small details that make products feel solid for everyone.",
+  bio: "Problem solver focused on user problems — using data to understand them deeply, validate solutions, and build with depth. Skilled across product development, design, end-to-end solution architecture, team leadership, regulatory risk, and privacy. Built deep frontend expertise along the way — accessibility, scalability, UI frameworks, and design systems.",
   longBio:
-    "I've spent the last decade shipping interfaces that need to work for everyone. At Meta I focus on frontend platform; before that I led accessibility and design systems work at EAB, where I rebuilt component libraries, brought complex SPAs to WCAG 2.1 compliance, and helped product teams move faster on a shared foundation. I'm happiest when the work sits at the intersection of design and engineering.",
+    "I solve problems where engineering, product, and design overlap — using data to understand users, validate ideas, and ship solutions with depth. I work across product development, design, end-to-end architecture, team leadership, regulatory risk, solutioning, and privacy. I'm currently a Senior Software Engineer at Meta. My foundation is frontend: a decade building accessible, scalable interfaces across UI frameworks (React, Angular, Web Components) and leading design system work at EAB.",
   location: "Washington, DC",
-  email: "sravankacha@gmail.com",
+  emailUser: "sravankacha",
+  emailDomain: "gmail.com",
   linkedin: "https://www.linkedin.com/in/sravankumarkachavarapu",
   github: "https://github.com/sravankacha",
   twitter: "https://twitter.com/sravankacha",
+  skills: [
+    "Product development",
+    "Design",
+    "Solution architecture",
+    "Team leadership",
+    "Regulatory risk",
+    "Privacy",
+    "Solutioning",
+    "Frontend engineering",
+    "Accessibility",
+    "Design systems",
+  ],
 };

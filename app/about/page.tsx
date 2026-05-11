@@ -1,23 +1,52 @@
 import { profile } from "../_data/profile";
 import { experience } from "../_data/experience";
+import EmailLink from "../_components/EmailLink";
 
 export const metadata = {
-  title: "About — Sravan Kachavarapu",
+  title: "About",
+  description: `${profile.name} — ${profile.bio}`,
 };
 
 export default function AboutPage() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-20">
-      <h1 className="font-display text-5xl font-medium mb-8">About</h1>
-      <p className="text-lg text-muted leading-relaxed mb-6">
+      <h1 className="font-display text-5xl font-medium mb-8 heading-accent">
+        About
+      </h1>
+      <p className="text-lg text-foreground/80 leading-relaxed mb-6">
         {profile.longBio}
       </p>
-      <p className="text-muted mb-14">
-        Based in {profile.location}. Reach me at{" "}
-        <a href={`mailto:${profile.email}`}>{profile.email}</a>.
+      <p className="text-muted mb-10">
+        Based in {profile.location}. Reach me on <EmailLink>email</EmailLink>{" "}
+        or{" "}
+        <a
+          href={profile.linkedin}
+          target="_blank"
+          rel="noopener noreferrer"
+          referrerPolicy="no-referrer"
+        >
+          LinkedIn
+        </a>
+        .
       </p>
 
-      <h2 className="font-display text-3xl font-medium mb-8">Experience</h2>
+      <h2 className="font-display text-2xl font-medium mb-3 heading-accent">
+        Skills & focus
+      </h2>
+      <ul className="flex flex-wrap gap-2 mb-14">
+        {profile.skills.map((skill) => (
+          <li
+            key={skill}
+            className="font-mono text-xs px-2.5 py-1 rounded-full border border-border bg-surface"
+          >
+            {skill}
+          </li>
+        ))}
+      </ul>
+
+      <h2 className="font-display text-3xl font-medium mb-8 heading-accent">
+        Experience
+      </h2>
       <div className="space-y-12">
         {experience.map((role) => (
           <article

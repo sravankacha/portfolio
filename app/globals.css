@@ -1,14 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8f7f4;
-  --foreground: #18181b;
-  --muted: #71717a;
-  --accent: #047857;
-  --accent-soft: #a7f3d0;
-  --accent-deep: #064e3b;
+  --background: #ffffff;
+  --foreground: #000000;
+  --muted: #525252;
+  --accent: #6930c3;
+  --accent-2: #1e5f74;
+  --accent-3: #64dfdf;
   --surface: #ffffff;
-  --border: #e4e4e7;
+  --border: #e5e5e5;
+  --gradient: linear-gradient(135deg, #6930c3 0%, #5b3fa8 35%, #1e5f74 100%);
+  --gradient-soft: linear-gradient(
+    135deg,
+    rgba(105, 48, 195, 0.15) 0%,
+    rgba(30, 95, 116, 0.15) 100%
+  );
 }
 
 @theme inline {
@@ -16,6 +22,7 @@
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
   --color-surface: var(--surface);
   --color-border: var(--border);
   --font-sans: var(--font-inter);
@@ -25,35 +32,48 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0f0d;
-    --foreground: #f4f4f5;
-    --muted: #a1a1aa;
-    --accent: #34d399;
-    --accent-soft: #064e3b;
-    --accent-deep: #a7f3d0;
-    --surface: #18181b;
-    --border: #27272a;
+    --background: #0a0a0a;
+    --foreground: #fafafa;
+    --muted: #a3a3a3;
+    --accent: #a78bfa;
+    --accent-2: #64dfdf;
+    --accent-3: #ddd6fe;
+    --surface: #0f0f0f;
+    --border: #262626;
+    --gradient: linear-gradient(135deg, #a78bfa 0%, #818cf8 35%, #64dfdf 100%);
   }
 }
 
 body {
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
-  font-feature-settings: "cv11", "ss01";
 }
 
 .font-display {
   font-family: var(--font-fraunces), Georgia, serif;
   font-optical-sizing: auto;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
 }
 
 .font-mono {
   font-family: var(--font-jetbrains), ui-monospace, monospace;
 }
 
+/* Gradient text utility */
+.text-gradient {
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.heading-accent {
+  color: var(--accent);
+}
+
 ::selection {
   background: var(--accent);
-  color: var(--surface);
+  color: #ffffff;
 }
 
 a {
@@ -66,69 +86,61 @@ a:hover {
   opacity: 0.65;
 }
 
-/* Hero gradient motif */
-.hero-motif {
+/* Shape-morphing gradient blob */
+.morph-blob {
   position: relative;
   aspect-ratio: 1 / 1;
   width: 100%;
-  overflow: hidden;
-  border-radius: 1.25rem;
-  background: var(--surface);
+  display: grid;
+  place-items: center;
 }
 
-.hero-motif::before,
-.hero-motif::after,
-.hero-motif > span {
-  content: "";
+.morph-blob__shape {
+  width: 80%;
+  height: 80%;
+  background: var(--gradient);
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  animation: morph 12s ease-in-out infinite, rotate 32s linear infinite;
+  filter: blur(0.5px) saturate(1.1);
+  box-shadow:
+    0 30px 80px -20px rgba(105, 48, 195, 0.45),
+    0 10px 40px -15px rgba(30, 95, 116, 0.35);
+}
+
+.morph-blob__halo {
   position: absolute;
-  border-radius: 50%;
-  filter: blur(48px);
-  opacity: 0.85;
-  will-change: transform;
+  inset: 5%;
+  background: var(--gradient);
+  opacity: 0.18;
+  border-radius: 40% 60% 70% 30% / 50% 30% 70% 50%;
+  filter: blur(40px);
+  animation: morph 18s ease-in-out infinite reverse;
 }
 
-.hero-motif::before {
-  width: 75%;
-  height: 75%;
-  top: -10%;
-  left: -10%;
-  background: var(--accent);
-  animation: drift-a 18s ease-in-out infinite alternate;
+@keyframes morph {
+  0%, 100% {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  }
+  25% {
+    border-radius: 30% 70% 70% 30% / 50% 60% 40% 50%;
+  }
+  50% {
+    border-radius: 50% 50% 35% 65% / 30% 70% 30% 70%;
+  }
+  75% {
+    border-radius: 70% 30% 50% 50% / 60% 40% 60% 40%;
+  }
 }
 
-.hero-motif::after {
-  width: 70%;
-  height: 70%;
-  bottom: -10%;
-  right: -15%;
-  background: var(--accent-soft);
-  animation: drift-b 22s ease-in-out infinite alternate;
-}
-
-.hero-motif > span {
-  width: 50%;
-  height: 50%;
-  bottom: 15%;
-  left: 25%;
-  background: var(--accent-deep);
-  opacity: 0.6;
-  animation: drift-c 26s ease-in-out infinite alternate;
-}
-
-@keyframes drift-a {
-  to { transform: translate(8%, 6%) scale(1.1); }
-}
-@keyframes drift-b {
-  to { transform: translate(-6%, -10%) scale(0.95); }
-}
-@keyframes drift-c {
-  to { transform: translate(4%, -8%) scale(1.05); }
+@keyframes rotate {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-motif::before,
-  .hero-motif::after,
-  .hero-motif > span {
+  .morph-blob__shape,
+  .morph-blob__halo {
     animation: none;
   }
 }

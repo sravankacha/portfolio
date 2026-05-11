@@ -1,8 +1,10 @@
 import { profile } from "../_data/profile";
 import { experience } from "../_data/experience";
+import EmailLink from "../_components/EmailLink";
 
 export const metadata = {
-  title: "Resume — Sravan Kachavarapu",
+  title: "Resume",
+  description: `Resume for ${profile.name} — ${profile.tagline}`,
 };
 
 export default function ResumePage() {
@@ -10,11 +12,12 @@ export default function ResumePage() {
     <div className="max-w-3xl mx-auto px-6 py-20">
       <header className="mb-12 flex items-start justify-between gap-6 flex-wrap">
         <div>
-          <h1 className="font-display text-5xl font-medium">{profile.name}</h1>
-          <p className="text-muted mt-1">{profile.tagline}</p>
+          <h1 className="font-display text-5xl font-medium heading-accent">
+            {profile.name}
+          </h1>
+          <p className="text-foreground/80 mt-1">{profile.tagline}</p>
           <p className="text-sm text-muted mt-2">
-            {profile.location} ·{" "}
-            <a href={`mailto:${profile.email}`}>{profile.email}</a>
+            {profile.location} · <EmailLink>email</EmailLink>
           </p>
         </div>
         <a

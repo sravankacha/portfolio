@@ -10,11 +10,11 @@ export default function ProjectsPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-20">
-      <h1 className="font-display text-5xl font-medium mb-8">Projects</h1>
+      <h1 className="font-display text-5xl font-medium mb-8 heading-accent">Projects</h1>
 
       {active.length > 0 && (
         <section className="mb-16">
-          <h2 className="font-display text-2xl font-medium mb-4">Current</h2>
+          <h2 className="font-display text-2xl font-medium mb-4 heading-accent">Current</h2>
           <ul className="space-y-4">
             {active.map((p) => (
               <ProjectCard key={p.slug} project={p} />
@@ -24,7 +24,7 @@ export default function ProjectsPage() {
       )}
 
       <section>
-        <h2 className="font-display text-2xl font-medium mb-2">Archive</h2>
+        <h2 className="font-display text-2xl font-medium mb-2 heading-accent">Archive</h2>
         <p className="text-muted mb-6">
           Earlier work, mostly from my FanFueled years (2013–2014).
         </p>
