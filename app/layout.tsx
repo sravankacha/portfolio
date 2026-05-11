@@ -3,6 +3,8 @@ import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "./_components/Header";
 import Footer from "./_components/Footer";
+import ThemeInitScript from "./_components/ThemeInitScript";
+import OceanBackdrop from "./_components/OceanBackdrop";
 import { profile } from "./_data/profile";
 
 const inter = Inter({
@@ -113,15 +115,19 @@ export default function RootLayout({
       className={`${inter.variable} ${fraunces.variable} ${jetbrains.variable} h-full antialiased`}
     >
       <head>
+        <ThemeInitScript />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-background text-foreground">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+      <body className="min-h-full flex flex-col bg-background text-foreground relative">
+        <OceanBackdrop />
+        <div className="flex flex-col flex-1 relative z-10">
+          <Header />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </div>
       </body>
     </html>
   );

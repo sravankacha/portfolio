@@ -13,7 +13,7 @@ export default function Home() {
           <p className="font-mono text-xs uppercase tracking-widest text-muted mb-5">
             Hola — I am
           </p>
-          <h1 className="font-display text-5xl sm:text-6xl md:text-7xl font-medium leading-[1.05] mb-6 text-gradient">
+          <h1 className="hero-title text-5xl sm:text-6xl md:text-7xl leading-[1.05] mb-6">
             Sravan
             <br />
             Kachavarapu
@@ -21,7 +21,7 @@ export default function Home() {
           <p className="inline-block font-mono text-xs px-2.5 py-1 rounded-full border border-border bg-surface text-foreground mb-6">
             {profile.tagline}
           </p>
-          <p className="text-lg text-foreground/80 leading-relaxed max-w-md">
+          <p className="text-lg text-foreground/85 leading-relaxed max-w-md">
             {profile.bio}
           </p>
           <p className="mt-6 text-sm text-muted">
@@ -30,9 +30,55 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="morph-blob order-first md:order-last" aria-hidden="true">
-          <div className="morph-blob__halo" />
-          <div className="morph-blob__shape" />
+        <div className="hero-art order-first md:order-last" aria-hidden="true">
+          <div className="hero-art__editorial">
+            <div className="hero-art__editorial-halo" />
+            <div className="hero-art__editorial-shape" />
+          </div>
+          <div className="hero-art__terminal">
+            <pre className="m-0">{`╔════════════════════╗
+║  sravan@meta:~$    ║
+║                    ║
+║  > whoami          ║
+║  problem-solver    ║
+║                    ║
+║  > stack           ║
+║  product · design  ║
+║  engineering · ax  ║
+║  privacy · risk    ║
+║                    ║
+║  > status          ║
+║  shipping_         ║
+╚════════════════════╝`}</pre>
+            <p className="mt-2">
+              <span className="hero-art__terminal-cursor" />
+            </p>
+          </div>
+          <div className="hero-art__brutalist">
+            <div className="hero-art__brutalist-square" />
+            <div className="hero-art__brutalist-circle" />
+            <div className="hero-art__brutalist-bar" />
+            <div className="hero-art__brutalist-label">Sravan / 2026</div>
+          </div>
+          <div className="hero-art__ocean">
+            <div className="hero-art__ocean-porthole">
+              <svg
+                className="hero-art__ocean-fish"
+                viewBox="0 0 24 16"
+              >
+                <path
+                  d="M2 8 Q 6 2, 14 4 Q 20 6, 22 8 Q 20 10, 14 12 Q 6 14, 2 8 Z"
+                  fill="currentColor"
+                />
+                <path
+                  d="M2 8 L 0 4 L 0 12 Z"
+                  fill="currentColor"
+                  opacity="0.7"
+                />
+                <circle cx="16" cy="7" r="1" fill="#0a3d5a" />
+              </svg>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -57,7 +103,7 @@ export default function Home() {
                   {p.context}
                 </span>
               </div>
-              <p className="text-foreground/75 leading-relaxed">
+              <p className="text-foreground/80 leading-relaxed">
                 {p.description}
               </p>
             </li>
@@ -69,7 +115,7 @@ export default function Home() {
         <h2 className="font-display text-3xl font-medium heading-accent mb-4">
           Get in touch
         </h2>
-        <p className="text-foreground/80 mb-5 leading-relaxed max-w-lg">
+        <p className="text-foreground/85 mb-5 leading-relaxed max-w-lg">
           Happy to chat about product, design systems, accessibility, or
           building frontends for scale.
         </p>

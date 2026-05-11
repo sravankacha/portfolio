@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
-:root {
+/* =========================================================
+   Base + Editorial theme (default)
+   ========================================================= */
+:root,
+[data-theme="editorial"] {
   --background: #ffffff;
   --foreground: #000000;
   --muted: #525252;
@@ -9,12 +13,95 @@
   --accent-3: #64dfdf;
   --surface: #ffffff;
   --border: #e5e5e5;
+  --radius-lg: 1rem;
+  --radius-md: 0.75rem;
   --gradient: linear-gradient(135deg, #6930c3 0%, #5b3fa8 35%, #1e5f74 100%);
-  --gradient-soft: linear-gradient(
-    135deg,
-    rgba(105, 48, 195, 0.15) 0%,
-    rgba(30, 95, 116, 0.15) 100%
-  );
+  --display-font: var(--font-fraunces);
+  --body-font: var(--font-inter);
+}
+
+/* =========================================================
+   Terminal theme
+   ========================================================= */
+[data-theme="terminal"] {
+  --background: #0a0e0a;
+  --foreground: #b9f6ca;
+  --muted: #6ba87a;
+  --accent: #fbbf24;
+  --accent-2: #84cc16;
+  --accent-3: #fde68a;
+  --surface: #131913;
+  --border: #1f2e1f;
+  --radius-lg: 0;
+  --radius-md: 0;
+  --gradient: linear-gradient(135deg, #fbbf24 0%, #84cc16 100%);
+  --display-font: var(--font-jetbrains);
+  --body-font: var(--font-jetbrains);
+}
+
+/* =========================================================
+   Brutalist theme
+   ========================================================= */
+[data-theme="brutalist"] {
+  --background: #f5f5f0;
+  --foreground: #000000;
+  --muted: #404040;
+  --accent: #ff3b00;
+  --accent-2: #000000;
+  --accent-3: #facc15;
+  --surface: #ffffff;
+  --border: #000000;
+  --radius-lg: 0;
+  --radius-md: 0;
+  --gradient: linear-gradient(135deg, #ff3b00 0%, #000000 100%);
+  --display-font: var(--font-inter);
+  --body-font: var(--font-inter);
+}
+
+/* =========================================================
+   Ocean theme
+   ========================================================= */
+[data-theme="ocean"] {
+  --background: linear-gradient(180deg, #cfeaff 0%, #7ec0ee 35%, #2c7da0 75%, #013a63 100%);
+  --background-solid: #7ec0ee;
+  --foreground: #062a3d;
+  --muted: #2b5d76;
+  --accent: #0077b6;
+  --accent-2: #00b4d8;
+  --accent-3: #90e0ef;
+  --surface: rgba(255, 255, 255, 0.55);
+  --surface-strong: rgba(255, 255, 255, 0.75);
+  --border: rgba(255, 255, 255, 0.6);
+  --radius-lg: 1.25rem;
+  --radius-md: 1rem;
+  --gradient: linear-gradient(135deg, #023e8a 0%, #0077b6 40%, #00b4d8 100%);
+  --display-font: var(--font-fraunces);
+  --body-font: var(--font-inter);
+}
+
+[data-theme="ocean"] body {
+  background: var(--background);
+  background-attachment: fixed;
+  color: var(--foreground);
+}
+
+/* Frosted-glass macOS vibrancy surfaces */
+[data-theme="ocean"] .bg-surface {
+  background: var(--surface) !important;
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid var(--border);
+}
+[data-theme="ocean"] header,
+[data-theme="ocean"] footer {
+  background: var(--surface);
+  backdrop-filter: blur(18px) saturate(170%);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+}
+
+/* Slightly more legible muted text against bright water */
+[data-theme="ocean"] .text-muted {
+  color: var(--muted);
 }
 
 @theme inline {
@@ -25,55 +112,116 @@
   --color-accent-2: var(--accent-2);
   --color-surface: var(--surface);
   --color-border: var(--border);
-  --font-sans: var(--font-inter);
-  --font-display: var(--font-fraunces);
+  --font-sans: var(--body-font);
+  --font-display: var(--display-font);
   --font-mono: var(--font-jetbrains);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #fafafa;
-    --muted: #a3a3a3;
-    --accent: #a78bfa;
-    --accent-2: #64dfdf;
-    --accent-3: #ddd6fe;
-    --surface: #0f0f0f;
-    --border: #262626;
-    --gradient: linear-gradient(135deg, #a78bfa 0%, #818cf8 35%, #64dfdf 100%);
-  }
-}
-
 body {
-  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  font-family: var(--body-font), system-ui, -apple-system, sans-serif;
 }
 
 .font-display {
-  font-family: var(--font-fraunces), Georgia, serif;
+  font-family: var(--display-font), Georgia, serif;
   font-optical-sizing: auto;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
 }
 
 .font-mono {
   font-family: var(--font-jetbrains), ui-monospace, monospace;
 }
 
-/* Gradient text utility */
-.text-gradient {
+/* =========================================================
+   Theme-specific overrides for shared utilities
+   ========================================================= */
+
+/* Card radius driven by theme */
+.rounded-xl {
+  border-radius: var(--radius-lg);
+}
+.rounded-lg {
+  border-radius: var(--radius-md);
+}
+.rounded-md {
+  border-radius: var(--radius-md);
+}
+
+/* Brutalist: heavier borders */
+[data-theme="brutalist"] .border,
+[data-theme="brutalist"] .border-border {
+  border-width: 2px;
+  border-color: var(--border);
+}
+
+/* Terminal: glow on accents */
+[data-theme="terminal"] a {
+  text-shadow: 0 0 8px rgba(132, 204, 22, 0.35);
+}
+[data-theme="terminal"] .heading-accent {
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+}
+
+/* =========================================================
+   Hero text treatment per theme
+   ========================================================= */
+.hero-title {
+  font-family: var(--display-font), Georgia, serif;
+}
+
+[data-theme="editorial"] .hero-title {
   background: var(--gradient);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
+  font-weight: 500;
+}
+
+[data-theme="terminal"] .hero-title {
+  color: var(--accent);
+  font-weight: 600;
+  text-shadow: 0 0 16px rgba(251, 191, 36, 0.5);
+}
+[data-theme="terminal"] .hero-title::before {
+  content: "> ";
+  color: var(--accent-2);
+}
+
+[data-theme="brutalist"] .hero-title {
+  color: var(--foreground);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  text-transform: none;
 }
 
 .heading-accent {
   color: var(--accent);
 }
 
+[data-theme="brutalist"] .heading-accent {
+  color: var(--foreground);
+  border-bottom: 4px solid var(--accent);
+  display: inline-block;
+  padding-bottom: 0.25rem;
+}
+
+/* Ocean: hero title with watery gradient + subtle white edge */
+[data-theme="ocean"] .hero-title {
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  font-weight: 500;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+[data-theme="ocean"] .heading-accent {
+  color: var(--accent);
+}
+
 ::selection {
   background: var(--accent);
-  color: #ffffff;
+  color: var(--background);
 }
 
 a {
@@ -81,21 +229,39 @@ a {
   text-decoration: none;
   transition: opacity 0.15s ease;
 }
-
 a:hover {
   opacity: 0.65;
 }
 
-/* Shape-morphing gradient blob */
-.morph-blob {
+/* =========================================================
+   Hero art — three treatments
+   ========================================================= */
+.hero-art {
   position: relative;
   aspect-ratio: 1 / 1;
   width: 100%;
-  display: grid;
-  place-items: center;
 }
 
-.morph-blob__shape {
+/* By default hide all variants, theme reveals one */
+.hero-art > .hero-art__editorial,
+.hero-art > .hero-art__terminal,
+.hero-art > .hero-art__brutalist {
+  display: none;
+}
+[data-theme="editorial"] .hero-art > .hero-art__editorial,
+[data-theme="terminal"] .hero-art > .hero-art__terminal,
+[data-theme="brutalist"] .hero-art > .hero-art__brutalist {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Editorial: morphing gradient blob */
+.hero-art__editorial {
+  position: relative;
+}
+.hero-art__editorial-shape {
   width: 80%;
   height: 80%;
   background: var(--gradient);
@@ -106,8 +272,7 @@ a:hover {
     0 30px 80px -20px rgba(105, 48, 195, 0.45),
     0 10px 40px -15px rgba(30, 95, 116, 0.35);
 }
-
-.morph-blob__halo {
+.hero-art__editorial-halo {
   position: absolute;
   inset: 5%;
   background: var(--gradient);
@@ -117,30 +282,270 @@ a:hover {
   animation: morph 18s ease-in-out infinite reverse;
 }
 
+/* Terminal: animated ASCII grid */
+.hero-art__terminal {
+  font-family: var(--font-jetbrains), monospace;
+  color: var(--accent-2);
+  font-size: clamp(10px, 1.3vw, 14px);
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  white-space: pre;
+  text-align: center;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  position: relative;
+}
+.hero-art__terminal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at center,
+    rgba(251, 191, 36, 0.12) 0%,
+    transparent 65%
+  );
+  pointer-events: none;
+  animation: pulse 4s ease-in-out infinite;
+}
+.hero-art__terminal-cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1em;
+  background: var(--accent);
+  vertical-align: text-bottom;
+  animation: blink 1s steps(2) infinite;
+}
+
+/* Brutalist: stacked hard shapes */
+.hero-art__brutalist {
+  position: relative;
+}
+.hero-art__brutalist-square {
+  position: absolute;
+  width: 70%;
+  height: 70%;
+  top: 10%;
+  left: 10%;
+  background: var(--foreground);
+}
+.hero-art__brutalist-circle {
+  position: absolute;
+  width: 50%;
+  height: 50%;
+  top: 30%;
+  left: 30%;
+  background: var(--accent);
+  border-radius: 50%;
+  mix-blend-mode: difference;
+}
+.hero-art__brutalist-bar {
+  position: absolute;
+  bottom: 10%;
+  left: 5%;
+  right: 5%;
+  height: 8px;
+  background: var(--accent);
+}
+.hero-art__brutalist-label {
+  position: absolute;
+  top: 5%;
+  right: 5%;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--foreground);
+  background: var(--accent-3);
+  padding: 4px 8px;
+}
+
 @keyframes morph {
-  0%, 100% {
-    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+  25% { border-radius: 30% 70% 70% 30% / 50% 60% 40% 50%; }
+  50% { border-radius: 50% 50% 35% 65% / 30% 70% 30% 70%; }
+  75% { border-radius: 70% 30% 50% 50% / 60% 40% 60% 40%; }
+}
+@keyframes rotate {
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse {
+  50% { opacity: 0.55; }
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* =========================================================
+   Ocean backdrop: waves + fish (visible only on ocean theme)
+   ========================================================= */
+.ocean-waves,
+.ocean-fish {
+  display: none;
+}
+
+[data-theme="ocean"] .ocean-waves {
+  display: block;
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 55vh;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.ocean-waves__layer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  animation: drift 28s linear infinite;
+}
+.ocean-waves__layer path {
+  fill-opacity: 0.35;
+}
+.ocean-waves__layer--far {
+  bottom: 8%;
+  height: 60%;
+  animation-duration: 42s;
+}
+.ocean-waves__layer--far path {
+  fill: #90e0ef;
+}
+.ocean-waves__layer--mid {
+  bottom: 4%;
+  height: 75%;
+  animation-duration: 30s;
+  animation-direction: reverse;
+}
+.ocean-waves__layer--mid path {
+  fill: #48cae4;
+}
+.ocean-waves__layer--near {
+  height: 90%;
+  animation-duration: 22s;
+}
+.ocean-waves__layer--near path {
+  fill: #0077b6;
+  fill-opacity: 0.55;
+}
+
+@keyframes drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* Fish swimming across the footer */
+[data-theme="ocean"] .ocean-fish {
+  display: block;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.ocean-fish__one {
+  position: absolute;
+  left: -10%;
+  color: #023e8a;
+  animation-name: swim;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  filter: drop-shadow(0 1px 2px rgba(2, 62, 138, 0.25));
+}
+@keyframes swim {
+  0% {
+    transform: translateX(-30vw) translateY(0) rotateY(0deg);
   }
-  25% {
-    border-radius: 30% 70% 70% 30% / 50% 60% 40% 50%;
+  48% {
+    transform: translateX(60vw) translateY(-6px) rotateY(0deg);
   }
   50% {
-    border-radius: 50% 50% 35% 65% / 30% 70% 30% 70%;
+    transform: translateX(60vw) translateY(-6px) rotateY(180deg);
   }
-  75% {
-    border-radius: 70% 30% 50% 50% / 60% 40% 60% 40%;
+  98% {
+    transform: translateX(-30vw) translateY(6px) rotateY(180deg);
+  }
+  100% {
+    transform: translateX(-30vw) translateY(0) rotateY(0deg);
   }
 }
 
-@keyframes rotate {
-  to {
-    transform: rotate(360deg);
-  }
+/* Ocean: hero art replaces the gradient blob with a circular porthole over waves */
+.hero-art > .hero-art__ocean {
+  display: none;
+}
+[data-theme="ocean"] .hero-art > .hero-art__ocean {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+.hero-art__ocean {
+  position: relative;
+}
+.hero-art__ocean-porthole {
+  width: 78%;
+  height: 78%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #90e0ef 0%, #00b4d8 50%, #023e8a 100%);
+  box-shadow:
+    inset 0 0 0 6px rgba(255, 255, 255, 0.6),
+    inset 0 0 0 14px rgba(2, 62, 138, 0.6),
+    0 30px 80px -25px rgba(2, 62, 138, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+.hero-art__ocean-porthole::before,
+.hero-art__ocean-porthole::after {
+  content: "";
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  height: 30%;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  animation: bob 6s ease-in-out infinite;
+}
+.hero-art__ocean-porthole::before {
+  top: 35%;
+}
+.hero-art__ocean-porthole::after {
+  top: 55%;
+  background: rgba(255, 255, 255, 0.22);
+  animation-duration: 9s;
+  animation-direction: reverse;
+}
+.hero-art__ocean-fish {
+  position: absolute;
+  width: 18%;
+  top: 55%;
+  left: 20%;
+  color: #ffd166;
+  animation: swim-mini 11s linear infinite;
+}
+@keyframes bob {
+  50% { transform: translateY(-12%); }
+}
+@keyframes swim-mini {
+  0% { transform: translateX(-30%) rotateY(0deg); }
+  48% { transform: translateX(280%) rotateY(0deg); }
+  50% { transform: translateX(280%) rotateY(180deg); }
+  98% { transform: translateX(-30%) rotateY(180deg); }
+  100% { transform: translateX(-30%) rotateY(0deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .morph-blob__shape,
-  .morph-blob__halo {
+  .hero-art__editorial-shape,
+  .hero-art__editorial-halo,
+  .hero-art__terminal::before,
+  .hero-art__terminal-cursor,
+  .ocean-waves__layer,
+  .ocean-fish__one,
+  .hero-art__ocean-porthole::before,
+  .hero-art__ocean-porthole::after,
+  .hero-art__ocean-fish {
     animation: none;
   }
 }
