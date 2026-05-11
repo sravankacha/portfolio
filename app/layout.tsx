@@ -4,7 +4,7 @@ import "./globals.css";
 import Header from "./_components/Header";
 import Footer from "./_components/Footer";
 import ThemeInitScript from "./_components/ThemeInitScript";
-import OceanBackdrop from "./_components/OceanBackdrop";
+import OceanCanvasGate from "./_components/OceanCanvasGate";
 import { profile } from "./_data/profile";
 
 const inter = Inter({
@@ -122,7 +122,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground relative">
-        <OceanBackdrop />
+        <OceanCanvasGate />
         <div className="flex flex-col flex-1 relative z-10">
           <Header />
           <main className="flex-1">{children}</main>

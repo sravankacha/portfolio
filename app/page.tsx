@@ -35,37 +35,9 @@ export default function Home() {
             <div className="hero-art__editorial-halo" />
             <div className="hero-art__editorial-shape" />
           </div>
-          <div className="hero-art__terminal">
-            <pre className="m-0">{`╔════════════════════╗
-║  sravan@meta:~$    ║
-║                    ║
-║  > whoami          ║
-║  problem-solver    ║
-║                    ║
-║  > stack           ║
-║  product · design  ║
-║  engineering · ax  ║
-║  privacy · risk    ║
-║                    ║
-║  > status          ║
-║  shipping_         ║
-╚════════════════════╝`}</pre>
-            <p className="mt-2">
-              <span className="hero-art__terminal-cursor" />
-            </p>
-          </div>
-          <div className="hero-art__brutalist">
-            <div className="hero-art__brutalist-square" />
-            <div className="hero-art__brutalist-circle" />
-            <div className="hero-art__brutalist-bar" />
-            <div className="hero-art__brutalist-label">Sravan / 2026</div>
-          </div>
           <div className="hero-art__ocean">
             <div className="hero-art__ocean-porthole">
-              <svg
-                className="hero-art__ocean-fish"
-                viewBox="0 0 24 16"
-              >
+              <svg className="hero-art__ocean-fish" viewBox="0 0 24 16">
                 <path
                   d="M2 8 Q 6 2, 14 4 Q 20 6, 22 8 Q 20 10, 14 12 Q 6 14, 2 8 Z"
                   fill="currentColor"

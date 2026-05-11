@@ -1,4 +1,4 @@
-export type ThemeId = "editorial" | "terminal" | "brutalist" | "ocean";
+export type ThemeId = "editorial" | "ocean";
 
 export type Theme = {
   id: ThemeId;
@@ -11,16 +11,6 @@ export const themes: Theme[] = [
     id: "editorial",
     label: "editorial",
     tagline: "Serif headlines, gradient hero",
-  },
-  {
-    id: "terminal",
-    label: "terminal",
-    tagline: "Mono, sharp, command-line",
-  },
-  {
-    id: "brutalist",
-    label: "brutalist",
-    tagline: "Stark, system, hard edges",
   },
   {
     id: "ocean",

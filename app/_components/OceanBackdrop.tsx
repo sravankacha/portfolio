@@ -1,43 +1,10 @@
 /**
- * Ocean theme decor: layered SVG waves as page background and a small school of
- * swimming fish that drift across the footer. Renders for all themes but is
- * hidden via CSS unless [data-theme="ocean"].
+ * Ocean theme footer fish — a small school of SVG fish drifting across the
+ * footer. WebGL waves render behind the page via OceanCanvasGate; these are
+ * the cosmetic foreground critters. Rendered for all themes but hidden via
+ * CSS unless [data-theme="ocean"].
  */
-export default function OceanBackdrop() {
-  return (
-    <>
-      <div className="ocean-waves" aria-hidden="true">
-        <svg
-          className="ocean-waves__layer ocean-waves__layer--far"
-          viewBox="0 0 1440 200"
-          preserveAspectRatio="none"
-        >
-          <path d="M0,100 C240,160 480,40 720,80 C960,120 1200,180 1440,100 L1440,200 L0,200 Z" />
-          <path d="M0,100 C240,160 480,40 720,80 C960,120 1200,180 1440,100 L1440,200 L0,200 Z" transform="translate(1440 0)" />
-        </svg>
-        <svg
-          className="ocean-waves__layer ocean-waves__layer--mid"
-          viewBox="0 0 1440 200"
-          preserveAspectRatio="none"
-        >
-          <path d="M0,120 C180,180 420,70 720,110 C1020,150 1260,200 1440,140 L1440,200 L0,200 Z" />
-          <path d="M0,120 C180,180 420,70 720,110 C1020,150 1260,200 1440,140 L1440,200 L0,200 Z" transform="translate(1440 0)" />
-        </svg>
-        <svg
-          className="ocean-waves__layer ocean-waves__layer--near"
-          viewBox="0 0 1440 200"
-          preserveAspectRatio="none"
-        >
-          <path d="M0,140 C240,200 540,90 720,130 C900,170 1200,210 1440,160 L1440,200 L0,200 Z" />
-          <path d="M0,140 C240,200 540,90 720,130 C900,170 1200,210 1440,160 L1440,200 L0,200 Z" transform="translate(1440 0)" />
-        </svg>
-      </div>
-    </>
-  );
-}
-
 export function OceanFishSchool() {
-  // Small reusable fish SVG repeated with different sizes/depths/speeds
   return (
     <div className="ocean-fish" aria-hidden="true">
       {[
