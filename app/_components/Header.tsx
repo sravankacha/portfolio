@@ -5,6 +5,7 @@ const nav = [
   { href: "/about", label: "About" },
   { href: "/projects", label: "Projects" },
   { href: "/resume", label: "Resume" },
+  { href: "/lab", label: "Lab" },
 ];
 
 export default function Header() {
