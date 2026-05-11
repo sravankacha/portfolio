@@ -10,10 +10,8 @@ export default function ResumePage() {
     <div className="max-w-3xl mx-auto px-6 py-20">
       <header className="mb-12 flex items-start justify-between gap-6 flex-wrap">
         <div>
-          <h1 className="text-4xl font-semibold tracking-tight">
-            {profile.name}
-          </h1>
-          <p className="text-muted">{profile.tagline}</p>
+          <h1 className="font-display text-5xl font-medium">{profile.name}</h1>
+          <p className="text-muted mt-1">{profile.tagline}</p>
           <p className="text-sm text-muted mt-2">
             {profile.location} ·{" "}
             <a href={`mailto:${profile.email}`}>{profile.email}</a>
@@ -32,7 +30,7 @@ export default function ResumePage() {
         {experience.map((role) => (
           <article key={`${role.company}-${role.title}`}>
             <header className="mb-3">
-              <h2 className="font-semibold">
+              <h2 className="font-display text-xl font-medium">
                 {role.title} · {role.company}
               </h2>
               <p className="text-muted text-sm font-mono">{role.period}</p>

@@ -10,11 +10,11 @@ export default function ProjectsPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-20">
-      <h1 className="text-4xl font-semibold tracking-tight mb-8">Projects</h1>
+      <h1 className="font-display text-5xl font-medium mb-8">Projects</h1>
 
       {active.length > 0 && (
         <section className="mb-16">
-          <h2 className="text-xl font-semibold mb-4">Current</h2>
+          <h2 className="font-display text-2xl font-medium mb-4">Current</h2>
           <ul className="space-y-4">
             {active.map((p) => (
               <ProjectCard key={p.slug} project={p} />
@@ -24,7 +24,7 @@ export default function ProjectsPage() {
       )}
 
       <section>
-        <h2 className="text-xl font-semibold mb-2">Archive</h2>
+        <h2 className="font-display text-2xl font-medium mb-2">Archive</h2>
         <p className="text-muted mb-6">
           Earlier work, mostly from my FanFueled years (2013–2014).
         </p>
@@ -44,9 +44,9 @@ function ProjectCard({
   project: (typeof projects)[number];
 }) {
   return (
-    <li className="border border-border rounded-lg p-5 hover:border-accent transition-colors bg-surface">
-      <div className="flex items-baseline justify-between gap-4 mb-1">
-        <h3 className="font-medium text-lg">{project.title}</h3>
+    <li className="border border-border rounded-xl p-6 hover:border-accent transition-colors bg-surface">
+      <div className="flex items-baseline justify-between gap-4 mb-2">
+        <h3 className="font-display text-xl font-medium">{project.title}</h3>
         <span className="font-mono text-xs text-muted shrink-0">
           {project.context}
         </span>

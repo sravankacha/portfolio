@@ -1,10 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafaf9;
+  --background: #f8f7f4;
   --foreground: #18181b;
   --muted: #71717a;
-  --accent: #6930c3;
+  --accent: #047857;
+  --accent-soft: #a7f3d0;
+  --accent-deep: #064e3b;
   --surface: #ffffff;
   --border: #e4e4e7;
 }
@@ -16,28 +18,42 @@
   --color-accent: var(--accent);
   --color-surface: var(--surface);
   --color-border: var(--border);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-fraunces);
+  --font-mono: var(--font-jetbrains);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #fafafa;
+    --background: #0a0f0d;
+    --foreground: #f4f4f5;
     --muted: #a1a1aa;
-    --accent: #a78bfa;
+    --accent: #34d399;
+    --accent-soft: #064e3b;
+    --accent-deep: #a7f3d0;
     --surface: #18181b;
     --border: #27272a;
   }
 }
 
 body {
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  font-feature-settings: "cv11", "ss01";
+}
+
+.font-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+}
+
+.font-mono {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
 }
 
 ::selection {
   background: var(--accent);
-  color: white;
+  color: var(--surface);
 }
 
 a {
@@ -47,5 +63,72 @@ a {
 }
 
 a:hover {
-  opacity: 0.7;
+  opacity: 0.65;
+}
+
+/* Hero gradient motif */
+.hero-motif {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: var(--surface);
+}
+
+.hero-motif::before,
+.hero-motif::after,
+.hero-motif > span {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(48px);
+  opacity: 0.85;
+  will-change: transform;
+}
+
+.hero-motif::before {
+  width: 75%;
+  height: 75%;
+  top: -10%;
+  left: -10%;
+  background: var(--accent);
+  animation: drift-a 18s ease-in-out infinite alternate;
+}
+
+.hero-motif::after {
+  width: 70%;
+  height: 70%;
+  bottom: -10%;
+  right: -15%;
+  background: var(--accent-soft);
+  animation: drift-b 22s ease-in-out infinite alternate;
+}
+
+.hero-motif > span {
+  width: 50%;
+  height: 50%;
+  bottom: 15%;
+  left: 25%;
+  background: var(--accent-deep);
+  opacity: 0.6;
+  animation: drift-c 26s ease-in-out infinite alternate;
+}
+
+@keyframes drift-a {
+  to { transform: translate(8%, 6%) scale(1.1); }
+}
+@keyframes drift-b {
+  to { transform: translate(-6%, -10%) scale(0.95); }
+}
+@keyframes drift-c {
+  to { transform: translate(4%, -8%) scale(1.05); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-motif::before,
+  .hero-motif::after,
+  .hero-motif > span {
+    animation: none;
+  }
 }
