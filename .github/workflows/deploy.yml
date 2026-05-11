@@ -27,6 +27,8 @@ jobs:
         run: npm ci
 
       - name: Build static site
+        env:
+          NEXT_PUBLIC_CF_BEACON_TOKEN: ${{ secrets.NEXT_PUBLIC_CF_BEACON_TOKEN }}
         run: npm run build
 
       - name: Configure AWS credentials
@@ -56,3 +58,26 @@ jobs:
             --paths "/*" \
             --query 'Invalidation.Id' --output text)
           echo "CloudFront invalidation: $INVALIDATION_ID"
+
+      - name: Wait for CloudFront propagation
+        run: sleep 45
+
+  lighthouse:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run Lighthouse CI against production
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: ./lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true

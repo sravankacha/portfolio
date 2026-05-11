@@ -5,6 +5,7 @@ import Header from "./_components/Header";
 import Footer from "./_components/Footer";
 import ThemeInitScript from "./_components/ThemeInitScript";
 import OceanCanvasGate from "./_components/OceanCanvasGate";
+import Analytics from "./_components/Analytics";
 import { profile } from "./_data/profile";
 
 const inter = Inter({
@@ -120,6 +121,7 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <Analytics />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground relative">
         <OceanCanvasGate />
