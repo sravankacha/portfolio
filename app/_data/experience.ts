@@ -13,9 +13,9 @@ export const experience: Role[] = [
     period: "Current",
     highlights: [
       {
-        heading: "Frontend Platform",
+        heading: "Risk & Compliance Tools & Automation",
         description:
-          "Building frontend platform capabilities for scale and developer productivity.",
+          "Building tools and automation that help risk and compliance teams operate at Meta's scale — turning regulatory and policy requirements into reliable, repeatable software.",
       },
     ],
   },
