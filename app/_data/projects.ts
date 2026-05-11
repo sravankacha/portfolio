@@ -9,6 +9,13 @@ export type Project = {
 
 export const projects: Project[] = [
   {
+    slug: "meta-risk-compliance-tools",
+    title: "Risk & Compliance Tools & Automation",
+    context: "Meta · Current",
+    description:
+      "Tools and automation for risk and compliance teams — turning regulatory and policy requirements into reliable, repeatable software at Meta's scale.",
+  },
+  {
     slug: "fanfueled-engage-diy",
     title: "FanFueled Engage DIY",
     context: "FanFueled · 2013",
