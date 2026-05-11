@@ -4,6 +4,7 @@ export const metadata = {
   title: "Lab",
   description:
     "Small experiments and visual tinkering — interactive demos, shader playgrounds, and design probes.",
+  alternates: { canonical: "https://sravankacha.com/lab/" },
 };
 
 const experiments = [

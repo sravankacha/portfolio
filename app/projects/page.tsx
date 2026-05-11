@@ -1,7 +1,9 @@
 import { projects } from "../_data/projects";
 
 export const metadata = {
-  title: "Projects — Sravan Kachavarapu",
+  title: "Projects",
+  description: "Selected projects and an archive of earlier work.",
+  alternates: { canonical: "https://sravankacha.com/projects/" },
 };
 
 export default function ProjectsPage() {

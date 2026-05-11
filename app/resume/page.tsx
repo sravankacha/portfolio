@@ -5,6 +5,7 @@ import EmailLink from "../_components/EmailLink";
 export const metadata = {
   title: "Resume",
   description: `Resume for ${profile.name} — ${profile.tagline}`,
+  alternates: { canonical: "https://sravankacha.com/resume/" },
 };
 
 export default function ResumePage() {

@@ -5,6 +5,7 @@ export const metadata = {
   title: "Wave Control Panel",
   description:
     "Live sliders for the Gerstner-wave ocean shader — steepness, wavelength, sun direction.",
+  alternates: { canonical: "https://sravankacha.com/lab/waves/" },
 };
 
 export default function WavesLabPage() {

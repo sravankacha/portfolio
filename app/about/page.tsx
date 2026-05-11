@@ -5,6 +5,7 @@ import EmailLink from "../_components/EmailLink";
 export const metadata = {
   title: "About",
   description: `${profile.name} — ${profile.bio}`,
+  alternates: { canonical: "https://sravankacha.com/about/" },
 };
 
 export default function AboutPage() {

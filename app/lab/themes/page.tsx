@@ -4,6 +4,7 @@ import ThemeGallery from "./ThemeGallery";
 export const metadata = {
   title: "Theme Gallery",
   description: "Preview and switch between available site themes.",
+  alternates: { canonical: "https://sravankacha.com/lab/themes/" },
 };
 
 export default function ThemesLabPage() {
