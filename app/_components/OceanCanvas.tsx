@@ -200,8 +200,13 @@ export default function OceanCanvas({
       container.appendChild(renderer.domElement);
 
       const resize = () => {
-        const w = container.clientWidth || window.innerWidth;
-        const h = container.clientHeight || window.innerHeight;
+        // Size against the host's bounding rect with a hard cap. Container
+        // can get stretched by flex/grid parents on long pages, producing a
+        // WebGL framebuffer that hits browser limits (the 33554432 trap).
+        const rect = container.getBoundingClientRect();
+        const MAX = 4096;
+        const w = Math.max(1, Math.min(Math.round(rect.width), MAX));
+        const h = Math.max(1, Math.min(Math.round(rect.height), MAX));
         renderer.setSize(w, h, false);
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
@@ -209,6 +214,7 @@ export default function OceanCanvas({
       resize();
       const ro = new ResizeObserver(resize);
       ro.observe(container);
+      window.addEventListener("resize", resize);
 
       const clock = new THREE.Clock();
       let frameId = 0;
@@ -230,6 +236,7 @@ export default function OceanCanvas({
       cleanup = () => {
         cancelAnimationFrame(frameId);
         ro.disconnect();
+        window.removeEventListener("resize", resize);
         geom.dispose();
         mat.dispose();
         renderer.dispose();
@@ -247,5 +254,5 @@ export default function OceanCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transparent]);
 
-  return <div ref={containerRef} className="ocean-canvas-host w-full h-full" />;
+  return <div ref={containerRef} className="ocean-canvas-host absolute inset-0" />;
 }
