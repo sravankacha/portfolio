@@ -51,6 +51,12 @@ export default function Home() {
               </svg>
             </div>
           </div>
+          <div className="hero-art__diner">
+            <div>
+              <div className="diner-sign">sk.</div>
+              <div className="diner-sign__sub">open all night</div>
+            </div>
+          </div>
         </div>
       </section>
 

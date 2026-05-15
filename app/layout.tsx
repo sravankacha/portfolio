@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
+import { Fraunces, Inter, JetBrains_Mono, Pacifico } from "next/font/google";
 import "./globals.css";
 import Header from "./_components/Header";
 import Footer from "./_components/Footer";
@@ -25,6 +25,13 @@ const jetbrains = JetBrains_Mono({
   variable: "--font-jetbrains",
   subsets: ["latin"],
   display: "swap",
+});
+
+const pacifico = Pacifico({
+  variable: "--font-pacifico",
+  subsets: ["latin"],
+  display: "swap",
+  weight: "400",
 });
 
 const SITE_URL = "https://sravankacha.com";
@@ -113,7 +120,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${fraunces.variable} ${jetbrains.variable} h-full antialiased`}
+      className={`${inter.variable} ${fraunces.variable} ${jetbrains.variable} ${pacifico.variable} h-full antialiased`}
     >
       <head>
         <ThemeInitScript />
