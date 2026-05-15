@@ -120,6 +120,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${inter.variable} ${fraunces.variable} ${jetbrains.variable} ${pacifico.variable} h-full antialiased`}
     >
       <head>
