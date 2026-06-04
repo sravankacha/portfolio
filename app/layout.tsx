@@ -37,7 +37,7 @@ const pacifico = Pacifico({
 const SITE_URL = "https://sravankacha.com";
 const TITLE = `${profile.name} — Product, Design, Engineering`;
 const DESCRIPTION =
-  "Problem solver focused on user problems — using data to understand, validate, and ship solutions with depth. Senior Software Engineer at Meta with experience across product, design, solution architecture, regulatory risk, and privacy.";
+  "Problem solver focused on user problems — using data to understand, validate, and ship solutions with depth. Staff Software Engineer at Meta with experience across product, design, solution architecture, regulatory risk, and privacy.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
   publisher: profile.name,
   keywords: [
     "Sravan Kachavarapu",
-    "Senior Software Engineer",
+    "Staff Software Engineer",
     "Meta",
     "Frontend Engineer",
     "Product Development",

@@ -429,6 +429,12 @@ a:hover {
   z-index: 0;
   overflow: hidden;
 }
+.ocean-canvas-host {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
 .ocean-canvas-host > canvas {
   display: block;
   width: 100% !important;

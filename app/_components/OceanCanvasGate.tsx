@@ -25,7 +25,7 @@ export default function OceanCanvasGate() {
   if (!isOcean) return null;
   return (
     <div className="ocean-canvas" aria-hidden="true">
-      <OceanCanvas />
+      <OceanCanvas transparent={false} />
     </div>
   );
 }
