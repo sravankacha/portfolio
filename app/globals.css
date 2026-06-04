@@ -95,18 +95,26 @@
    ========================================================= */
 [data-theme="ocean"] {
   --background: linear-gradient(180deg, #cfeaff 0%, #7ec0ee 35%, #2c7da0 75%, #013a63 100%);
-  --foreground: #062a3d;
-  --muted: #2b5d76;
-  --accent: #0077b6;
+  --foreground: #fafdff;
+  --muted: #cfe8f5;
+  --accent: #5fc8e8;
   --accent-2: #00b4d8;
   --accent-3: #90e0ef;
-  --surface: rgba(255, 255, 255, 0.55);
-  --border: rgba(255, 255, 255, 0.6);
+  --surface: rgba(8, 30, 55, 0.45);
+  --border: rgba(190, 220, 240, 0.45);
   --radius-lg: 1.25rem;
   --radius-md: 1rem;
-  --gradient: linear-gradient(135deg, #023e8a 0%, #0077b6 40%, #00b4d8 100%);
+  --gradient: linear-gradient(135deg, #a4e3f5 0%, #5fc8e8 50%, #ffffff 100%);
   --display-font: var(--font-fraunces);
   --body-font: var(--font-inter);
+}
+
+/* All text in ocean theme gets a soft dark shadow so it reads against
+   bright cyan crests and dark navy valleys alike */
+[data-theme="ocean"] main,
+[data-theme="ocean"] header,
+[data-theme="ocean"] footer {
+  text-shadow: 0 1px 2px rgba(2, 20, 40, 0.55), 0 0 12px rgba(2, 20, 40, 0.35);
 }
 
 @theme inline {
@@ -410,6 +418,20 @@ a:hover {
 }
 
 [data-theme="ocean"] .text-muted { color: var(--muted); }
+
+/* Soft radial vignette over the WebGL canvas — keeps text legible without
+   killing the immersive ocean feel. Sits between canvas (z:0) and content (z:10). */
+[data-theme="ocean"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(ellipse 70% 60% at 28% 45%, rgba(248, 252, 255, 0.55) 0%, rgba(248, 252, 255, 0) 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, transparent 25%, transparent 75%, rgba(2, 30, 60, 0.25) 100%);
+  mix-blend-mode: normal;
+}
 
 /* =========================================================
    Ocean: WebGL canvas + footer fish
