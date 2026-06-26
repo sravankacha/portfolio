@@ -95,16 +95,26 @@ export const experience: Role[] = [
       {
         heading: "Lead UI development on multiple product features",
         description:
-          "Led UI development efforts on multiple product features — academic planning, scheduling, the Navigate/Guide mobile app, the rapid-application framework, and Navigate's WCAG 2.0 compliance work.",
+          "Led UI development efforts on multiple product features and a unification effort across products.",
+        bullets: [
+          "Led effort to unify multiple products into a single platform to deliver value to customers",
+          "Explored and introduced a universal framework based on Web Components to accelerate development across multiple teams",
+          "Contributed to upgrading and maintaining the internal UI framework",
+          "Worked across different development teams to deliver features under tight deadlines",
+          "Coordinated with the UI architect to develop and incorporate software patterns for rapid development",
+          "Streamlined the build process for various products with other developers",
+          "Mentored junior developers in software patterns, best practices, tools, and front-end frameworks",
+        ],
       },
       {
-        heading: "WCAG 2.0 Compliance for Navigate",
+        heading: "Accessibility-first development",
         description:
-          "Brought a complex Angular SPA to WCAG 2.0 compliance.",
+          "Led the effort to incorporate accessibility throughout the development process.",
         bullets: [
-          "Updated Angular components and interactions for accessibility",
+          "Upgraded the internal UI framework and tooling to incorporate accessibility solutions across multiple products",
+          "Got products certified as accessible",
           "Built accessible alternatives to complex visualizations",
-          "Updated colors, navigation, ARIA attributes, and labels",
+          "ARIA attributes, labels, colors, and navigation patterns reviewed across the platform",
           "Validated solutions with screen readers",
         ],
       },
@@ -151,15 +161,21 @@ export const experience: Role[] = [
     summary: "Washington D.C. Metro Area",
     highlights: [
       {
-        heading: "Rapid Application Framework",
+        heading: "Common UI Framework",
         description:
-          "Built a common UI framework to accelerate development across multiple product teams — the foundation that later evolved into the design system and micro-frontend services at EAB.",
+          "Built a common UI framework to accelerate development across multiple product teams and maintain consistent brand for Education Advisory Board.",
         bullets: [
+          "Worked with product managers and lead architects to create end-to-end solutions that improved end-user experience",
+          "Partnered with UX and visual designers to create UI widgets for mobile and desktop",
           "Application services for networking, routing, logging, tracking",
           "Reusable accessible components for rapid page composition",
-          "Standard tooling for builds, tests, and deploys",
-          "AngularJS as the core SPA stack",
+          "Standard tooling for builds, tests, and deploys; AngularJS as the core SPA stack",
         ],
+      },
+      {
+        heading: "Mobile apps for Android and iOS",
+        description:
+          "Led a team of three developers to build mobile apps for both Android and iOS devices.",
       },
     ],
   },
@@ -171,36 +187,32 @@ export const experience: Role[] = [
       "Greater Chicago Area. FanFueled was an engagement marketing company building social gaming solutions for brands, artists, and festivals. We used patented software to track the ripple of influence, incentivizing peer-to-peer marketing.",
     highlights: [
       {
-        heading: "Platinum Nights",
+        heading: "UI Design & Front-end Development",
         description:
-          "Fan engagement platform for the launch of Bud Light Blue & Michelob Ultra.",
+          "Designed overall look and feel for all of FanFueled's products and built high-fidelity front-end prototypes that demonstrated the UX vision.",
         bullets: [
-          "Frontend client for the Platinum Nights engagement experience",
-          "Facebook/Twitter SDK integration for friend graph and sharing",
-          "Responsive web app, optimized for gaming performance",
+          "Redesigned key aspects of the product suite",
+          "Delivered designs for several major web properties and tools — internal and client-facing",
+          "Designed interaction and visuals for FanFueled Shopping and FanFueled Box-Office web apps",
+          "Defined, designed, and implemented UI features: product checkout, product search, social sharing, personalization",
+          "Developed responsive websites for the Bud Light Platinum Nights and Michelob ULTRA Foursome social engagement campaigns",
+          "Partnered with developers and the creative director to ensure design specifications were met",
+          "Worked with testing, analytics, and marketing to assess and optimize product performance",
+          "Built front-end prototypes with HTML, CSS, JavaScript, AJAX, and various toolkits",
         ],
       },
       {
-        heading: "FanFueled Engage",
+        heading: "UX Architect",
         description:
-          "Social e-commerce platform and brand/profile pages.",
+          "Set strategic UX direction across FanFueled Shopping, Engage, and Events — wireframes, prototypes, IA, and the long-term experience roadmap.",
         bullets: [
-          "Designed mobile and tablet UI mockups for brand and profile pages",
-          "Redesigned and built the DIY brand-page wizard",
-          "Plugins, responsive pages, page-load optimizations across multiple CDNs",
-          "Dashboards to track engagement and troubleshoot issues",
-        ],
-      },
-      {
-        heading: "FanFueled Event Ticketing",
-        description:
-          "Ticketing platform for artists, brands, and clubs in the Mid-west region.",
-        bullets: [
-          "New UI for ticket purchase and checkout",
-          "Online tickets, order-confirmation emails, multi-device + print layouts",
-          "FanFueled Box-Office web app for kiosks",
-          "Heuristic and competitive analysis, user testing",
-          "Embeddable ticket-purchase widget",
+          "Designed Information Architecture for FanFueled Shopping, Engage, and Events",
+          "Set strategic product direction to increase usability and engagement; laid out forward-looking designs for growth",
+          "Created and maintained short-term and long-term UX roadmap for the product as a whole",
+          "Planned user-centered social engagement platforms and campaigns leveraging Facebook, Twitter, YouTube",
+          "Delivered detailed wireframes, rapid prototypes, and comprehensive UX documentation for digital campaigns and platforms",
+          "Coordinated with agency teams and clients to facilitate a user-centered design process",
+          "Converted strategic thinking into interactive solutions that unified client objectives with user needs — produced IA/IxD documentation end to end",
         ],
       },
     ],
@@ -212,9 +224,17 @@ export const experience: Role[] = [
     summary: "Greater Chicago Area",
     highlights: [
       {
-        heading: "Fan engagement platform — ideation & concept",
+        heading: "Fan engagement platform — ideation, concepts, and web assets",
         description:
-          "Worked with the creative director to ideate and conceptualize the fan engagement platform — early UI concepts, brand exploration, and mockups for what became FanFueled Engage.",
+          "Worked with the creative director to ideate and conceptualize the fan engagement platform — the early work that grew into FanFueled Engage.",
+        bullets: [
+          "Created UI concepts, wireframes, and interactive prototypes for the 'Engage' platform",
+          "Developed web assets for the Engage platform and its various features",
+          "Created mockups and developed ticket purchase process on the Engage platform",
+          "Created UI and interaction designs for the ticket checkout and event creation flows",
+          "Designed and developed the embeddable iframe for tickets",
+          "Designed and built email templates for engagement campaigns",
+        ],
       },
     ],
   },
