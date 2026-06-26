@@ -29,7 +29,7 @@ async function loadThree(): Promise<typeof THREENS> {
 const RESOLUTION = 256;           // FFT grid (david uses 512; 256 keeps perf high)
 const LOG2_RESOLUTION = Math.log2(RESOLUTION);
 const GEOMETRY_RESOLUTION = 256;  // mesh subdivision
-const GEOMETRY_SIZE = 2000;        // mesh side length in world units
+const GEOMETRY_SIZE = 4000;        // mesh side length in world units
 const PATCH_SIZE = 250;            // FFT patch size in world units
 
 // ===================== Shaders =====================
@@ -282,10 +282,6 @@ const oceanVS = /* glsl */ `
 const oceanFS = /* glsl */ `
   precision highp float;
   uniform sampler2D u_normalMap;
-  uniform sampler2D u_displacementMap;
-  uniform sampler2D u_initialSpectrum;
-  uniform sampler2D u_phaseTex;
-  uniform sampler2D u_spectrumTex;
   uniform vec3 u_cameraPosition;
   uniform vec3 u_oceanColor;
   uniform vec3 u_skyColor;
@@ -323,10 +319,10 @@ export type FFTParams = {
 };
 
 const DEFAULTS: FFTParams = {
-  windX: 10,
-  windZ: 10,
+  windX: 12,
+  windZ: 12,
   size: 250,
-  choppiness: 1.5,
+  choppiness: 2.3,
 };
 
 export default function FFTOceanCanvas({
@@ -390,16 +386,12 @@ export default function FFTOceanCanvas({
 
       // -- Scene --
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(60, 1, 1, 10000);
-      // Match david.li camera: distance 1500 from orbit point (-200,0,600),
-      // azimuth 0.4 rad, elevation 0.5 rad. Position works out to:
-      //   x = 1500*cos(elev)*sin(-az) + orbit.x
-      //   y = 1500*sin(elev) + orbit.y
-      //   z = 1500*cos(elev)*cos(-az) + orbit.z
-      const ORBIT = new THREE.Vector3(-200, 0, 600);
-      const camDist = 1500;
-      const az = 0.4;
-      const elev = 0.5;
+      const camera = new THREE.PerspectiveCamera(60, 1, 1, 12000);
+      // Closer to the water surface so wave detail is large enough to read.
+      const ORBIT = new THREE.Vector3(0, 0, -200);
+      const camDist = 700;
+      const az = 0.0;
+      const elev = 0.42;
       camera.position.set(
         camDist * Math.cos(elev) * Math.sin(-az) + ORBIT.x,
         camDist * Math.sin(elev) + ORBIT.y,
@@ -550,9 +542,6 @@ export default function FFTOceanCanvas({
         uniforms: {
           u_displacementMap: { value: displacementRT.texture },
           u_normalMap: { value: normalRT.texture },
-          u_initialSpectrum: { value: initialSpectrumRT.texture },
-          u_phaseTex: { value: pingPhaseRT.texture },
-          u_spectrumTex: { value: spectrumRT.texture },
           u_size: { value: paramsRef.current.size },
           u_geometrySize: { value: GEOMETRY_SIZE },
           u_cameraPosition: { value: new THREE.Vector3() },
