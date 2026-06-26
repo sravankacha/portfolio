@@ -32,7 +32,108 @@ export default function Home() {
             <div className="hero-art__editorial-shape" />
           </div>
           <div className="hero-art__ocean">
-            <div className="hero-art__ocean-porthole" />
+            <svg
+              viewBox="0 0 200 200"
+              className="hero-art__ocean-compass"
+              aria-hidden="true"
+            >
+              <defs>
+                <radialGradient id="ocean-compass-bg" cx="50%" cy="50%" r="55%">
+                  <stop offset="0%" stopColor="rgba(255,255,255,0.10)" />
+                  <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                </radialGradient>
+                <linearGradient
+                  id="ocean-compass-needle"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop offset="0%" stopColor="#ffd166" />
+                  <stop offset="50%" stopColor="#ffd166" />
+                  <stop offset="50.01%" stopColor="#90e0ef" />
+                  <stop offset="100%" stopColor="#90e0ef" />
+                </linearGradient>
+              </defs>
+              <circle cx="100" cy="100" r="96" fill="url(#ocean-compass-bg)" />
+              <circle
+                cx="100"
+                cy="100"
+                r="88"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="0.8"
+                opacity="0.45"
+              />
+              <circle
+                cx="100"
+                cy="100"
+                r="82"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="0.5"
+                opacity="0.25"
+              />
+              {/* 32 tick marks */}
+              <g opacity="0.55" stroke="currentColor" strokeWidth="0.8">
+                {Array.from({ length: 32 }).map((_, i) => {
+                  const a = (i * Math.PI * 2) / 32;
+                  const r1 = i % 4 === 0 ? 70 : i % 2 === 0 ? 76 : 80;
+                  const r2 = 86;
+                  return (
+                    <line
+                      key={i}
+                      x1={100 + Math.cos(a) * r1}
+                      y1={100 + Math.sin(a) * r1}
+                      x2={100 + Math.cos(a) * r2}
+                      y2={100 + Math.sin(a) * r2}
+                    />
+                  );
+                })}
+              </g>
+              {/* 8-point star (cardinal + intercardinal) */}
+              <g
+                fill="currentColor"
+                opacity="0.85"
+                stroke="rgba(0,0,0,0.25)"
+                strokeWidth="0.4"
+              >
+                {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
+                  <polygon
+                    key={deg}
+                    points="100,28 106,100 100,172 94,100"
+                    transform={`rotate(${deg} 100 100)`}
+                    opacity={deg % 90 === 0 ? 1 : 0.55}
+                  />
+                ))}
+              </g>
+              <text
+                x="100"
+                y="22"
+                textAnchor="middle"
+                fontSize="11"
+                fontFamily="var(--font-jetbrains), monospace"
+                fill="currentColor"
+              >
+                N
+              </text>
+              {/* Slowly drifting magnetic needle */}
+              <g className="hero-art__ocean-compass-needle">
+                <polygon
+                  points="100,40 104,100 100,160 96,100"
+                  fill="url(#ocean-compass-needle)"
+                />
+              </g>
+              {/* Centre cap */}
+              <circle cx="100" cy="100" r="6" fill="currentColor" />
+              <circle
+                cx="100"
+                cy="100"
+                r="2.5"
+                fill="#ff2d95"
+                className="hero-art__ocean-compass-pulse"
+              />
+            </svg>
           </div>
           <div className="hero-art__diner">
             <div>

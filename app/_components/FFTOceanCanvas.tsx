@@ -387,11 +387,12 @@ export default function FFTOceanCanvas({
       // -- Scene --
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(60, 1, 1, 12000);
-      // Closer to the water surface so wave detail is large enough to read.
+      // Steeper downward look so the horizon sits above the viewport — the
+      // visible frame is filled with water instead of a sliver of sky.
       const ORBIT = new THREE.Vector3(0, 0, -200);
       const camDist = 700;
       const az = 0.0;
-      const elev = 0.42;
+      const elev = 0.78;
       camera.position.set(
         camDist * Math.cos(elev) * Math.sin(-az) + ORBIT.x,
         camDist * Math.sin(elev) + ORBIT.y,
@@ -611,6 +612,11 @@ export default function FFTOceanCanvas({
       const clock = new THREE.Clock();
       let frameId = 0;
       let pingPhase = true;
+      // Phases advance linearly by omega(k) * dt and are wrapped mod 2π in
+      // the shader, so a single large dt on the first frame is equivalent to
+      // running ~600 small steps. This warm-starts the simulation so the user
+      // sees a developed wave field instantly on page load.
+      let warmupRemaining = 10.0;
       let lastWindKey =
         paramsRef.current.windX + paramsRef.current.windZ * 13 +
         paramsRef.current.size * 17;
@@ -629,7 +635,11 @@ export default function FFTOceanCanvas({
           lastWindKey = windKey;
         }
 
-        const dt = Math.min(clock.getDelta(), 1 / 30);
+        let dt = Math.min(clock.getDelta(), 1 / 30);
+        if (warmupRemaining > 0) {
+          dt += warmupRemaining;
+          warmupRemaining = 0;
+        }
 
         // 1) phase ping-pong
         phaseMat.uniforms.u_phases.value = pingPhase

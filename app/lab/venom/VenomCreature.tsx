@@ -319,8 +319,8 @@ export default function VenomCreature() {
   return (
     <div
       ref={containerRef}
-      className="relative w-full overflow-hidden bg-surface border border-border rounded-xl"
-      style={{ height: 600, cursor: "none" }}
+      className="absolute inset-0 overflow-hidden"
+      style={{ cursor: "none" }}
     >
       <svg
         ref={svgRef}
@@ -337,9 +337,6 @@ export default function VenomCreature() {
         <ellipse id="eye2" rx="4" ry="0.9" fill="#ffffff" />
         <ellipse id="eye3" rx="1.6" ry="0.6" fill="#ffffff" opacity="0.85" />
       </svg>
-      <p className="absolute bottom-3 left-4 text-xs text-muted font-mono select-none pointer-events-none">
-        move your mouse around the box
-      </p>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { Fraunces, Inter, JetBrains_Mono, Pacifico } from "next/font/google";
 import "./globals.css";
 import Header from "./_components/Header";
 import Footer from "./_components/Footer";
+import HideOnExperimentRoute from "./_components/HideOnExperimentRoute";
 import ThemeInitScript from "./_components/ThemeInitScript";
 import OceanCanvasGate from "./_components/OceanCanvasGate";
 import Analytics from "./_components/Analytics";
@@ -134,9 +135,13 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-background text-foreground relative">
         <OceanCanvasGate />
         <div className="flex flex-col flex-1 relative z-10">
-          <Header />
+          <HideOnExperimentRoute>
+            <Header />
+          </HideOnExperimentRoute>
           <main className="flex-1">{children}</main>
-          <Footer />
+          <HideOnExperimentRoute>
+            <Footer />
+          </HideOnExperimentRoute>
         </div>
       </body>
     </html>

@@ -1,11 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
-import type { WaveParams } from "../../_components/OceanCanvas";
+import { useEffect, useState } from "react";
+import type { FFTParams } from "../../_components/FFTOceanCanvas";
+import { BackButton, FloatingPanel } from "../_shared/LabChrome";
 
 // Lazy: only fetches Three.js from CDN when this page is open.
-const OceanCanvas = dynamic(() => import("../../_components/OceanCanvas"), {
+const FFTOceanCanvas = dynamic(() => import("../../_components/FFTOceanCanvas"), {
   ssr: false,
   loading: () => (
     <div className="absolute inset-0 grid place-items-center text-muted text-sm font-mono">
@@ -14,48 +15,66 @@ const OceanCanvas = dynamic(() => import("../../_components/OceanCanvas"), {
   ),
 });
 
-const DEFAULTS: WaveParams = {
-  steepness1: 0.2,
-  steepness2: 0.14,
-  steepness3: 0.1,
-  speed: 1,
-  sunAzimuth: 35,
-  sunElevation: 45,
+const DEFAULTS: FFTParams = {
+  windX: 12,
+  windZ: 12,
+  size: 250,
+  choppiness: 2.3,
 };
 
 export default function WaveControls() {
-  const [p, setP] = useState<WaveParams>(DEFAULTS);
+  const [p, setP] = useState<FFTParams>(DEFAULTS);
 
-  const update = <K extends keyof WaveParams>(key: K, value: WaveParams[K]) =>
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  const update = <K extends keyof FFTParams>(key: K, value: FFTParams[K]) =>
     setP((prev) => ({ ...prev, [key]: value }));
 
+  const windSpeed = Math.hypot(p.windX, p.windZ);
+
   return (
-    <div className="grid lg:grid-cols-[1fr_320px] gap-6">
-      <div className="aspect-square w-full relative rounded-xl overflow-hidden bg-surface border border-border">
-        <OceanCanvas params={p} transparent={false} />
-      </div>
+    <div className="fixed inset-0 z-40 bg-background">
+      <FFTOceanCanvas params={p} transparent={false} />
+      <BackButton />
 
-      <div className="space-y-5 bg-surface border border-border rounded-xl p-5">
-        <Header label="Wave steepness" />
-        <Slider label="Primary"   min={0} max={0.4} step={0.005} value={p.steepness1} onChange={(v) => update("steepness1", v)} />
-        <Slider label="Secondary" min={0} max={0.4} step={0.005} value={p.steepness2} onChange={(v) => update("steepness2", v)} />
-        <Slider label="Tertiary"  min={0} max={0.4} step={0.005} value={p.steepness3} onChange={(v) => update("steepness3", v)} />
+      <FloatingPanel title="FFT ocean" top={16} width={300}>
+        <Header label="Wind" />
+        <Slider label="X (m/s)" min={-30} max={30} step={0.5} value={p.windX} onChange={(v) => update("windX", v)} />
+        <Slider label="Z (m/s)" min={-30} max={30} step={0.5} value={p.windZ} onChange={(v) => update("windZ", v)} />
+        <p className="text-[10px] text-muted font-mono">
+          ‖wind‖ = {windSpeed.toFixed(1)} m/s
+        </p>
 
-        <Header label="Animation" />
-        <Slider label="Speed" min={0} max={3} step={0.05} value={p.speed} onChange={(v) => update("speed", v)} />
+        <Header label="Patch size" />
+        <Slider label="Tiles (m)" min={50} max={500} step={10} value={p.size} onChange={(v) => update("size", v)} />
 
-        <Header label="Sun" />
-        <Slider label="Azimuth°"   min={0}  max={360} step={1} value={p.sunAzimuth}   onChange={(v) => update("sunAzimuth", v)} />
-        <Slider label="Elevation°" min={5}  max={85}  step={1} value={p.sunElevation} onChange={(v) => update("sunElevation", v)} />
+        <Header label="Chop" />
+        <Slider label="Choppiness" min={0} max={4} step={0.05} value={p.choppiness} onChange={(v) => update("choppiness", v)} />
 
         <button
           type="button"
           onClick={() => setP(DEFAULTS)}
-          className="mt-2 w-full font-mono text-xs uppercase tracking-widest border border-border rounded-md py-2 hover:border-accent"
+          className="w-full font-mono text-xs uppercase tracking-widest border border-border rounded-md py-2 hover:border-accent transition-colors"
         >
           Reset
         </button>
-      </div>
+      </FloatingPanel>
+
+      <FloatingPanel title="About" top={460} width={300} defaultOpen={false}>
+        <p className="text-xs text-foreground/85 leading-relaxed">
+          Tessendorf FFT ocean — same shader powering the{" "}
+          <span className="font-mono">ocean</span> theme. JONSWAP spectrum,
+          phase ping-pong each frame, Stockham radix-2 FFT in fragment shaders.
+          Toggle the ocean theme from the footer to see it as a full-screen
+          background.
+        </p>
+      </FloatingPanel>
     </div>
   );
 }

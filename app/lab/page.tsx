@@ -9,6 +9,13 @@ export const metadata = {
 
 const experiments = [
   {
+    slug: "globe",
+    title: "Globe",
+    summary:
+      "Interactive 3D globe with country borders. Project public datasets as spikes — earthquakes, volcanoes, the ISS in real time, population.",
+    tag: "data · webgl",
+  },
+  {
     slug: "venom",
     title: "Venom",
     summary:
@@ -17,9 +24,9 @@ const experiments = [
   },
   {
     slug: "waves",
-    title: "Wave control panel",
+    title: "FFT ocean control panel",
     summary:
-      "Live sliders for the ocean theme's Gerstner-wave shader — steepness, wavelength, sun direction.",
+      "Live sliders for the Tessendorf FFT ocean shader powering the ocean theme — wind direction, patch size, choppiness.",
     tag: "shader · webgl",
   },
   {
