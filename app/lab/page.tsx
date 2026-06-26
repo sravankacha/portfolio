@@ -9,6 +9,13 @@ export const metadata = {
 
 const experiments = [
   {
+    slug: "venom",
+    title: "Venom",
+    summary:
+      "A sticky tentacled creature follows your cursor — Bezier tentacles snap to the nearest anchor points with elastic snap-and-whip.",
+    tag: "interaction · svg",
+  },
+  {
     slug: "waves",
     title: "Wave control panel",
     summary:
