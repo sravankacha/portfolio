@@ -4,6 +4,12 @@ export const metadata = {
   title: "Projects",
   description: "Selected projects and an archive of earlier work.",
   alternates: { canonical: "https://sravankacha.com/projects/" },
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: { index: false, follow: false },
+  },
 };
 
 export default function ProjectsPage() {
