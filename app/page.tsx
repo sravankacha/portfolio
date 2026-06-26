@@ -36,20 +36,7 @@ export default function Home() {
             <div className="hero-art__editorial-shape" />
           </div>
           <div className="hero-art__ocean">
-            <div className="hero-art__ocean-porthole">
-              <svg className="hero-art__ocean-fish" viewBox="0 0 24 16">
-                <path
-                  d="M2 8 Q 6 2, 14 4 Q 20 6, 22 8 Q 20 10, 14 12 Q 6 14, 2 8 Z"
-                  fill="currentColor"
-                />
-                <path
-                  d="M2 8 L 0 4 L 0 12 Z"
-                  fill="currentColor"
-                  opacity="0.7"
-                />
-                <circle cx="16" cy="7" r="1" fill="#0a3d5a" />
-              </svg>
-            </div>
+            <div className="hero-art__ocean-porthole" />
           </div>
           <div className="hero-art__diner">
             <div>

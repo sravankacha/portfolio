@@ -24,9 +24,7 @@
    Diner theme — Roadhouse-style neon
    ========================================================= */
 [data-theme="diner"] {
-  --background: radial-gradient(ellipse at 20% -10%, #2a0a3e 0%, transparent 55%),
-                radial-gradient(ellipse at 80% 110%, #00345c 0%, transparent 55%),
-                radial-gradient(ellipse at 50% 50%, #1a0026 0%, #050008 60%, #02000a 100%);
+  --background: radial-gradient(ellipse at 20% -10%, #2a0a3e 0%, transparent 55%), radial-gradient(ellipse at 80% 110%, #00345c 0%, transparent 55%), radial-gradient(ellipse at 50% 50%, #1a0026 0%, #050008 60%, #02000a 100%);
   --foreground: #f4e6d4;
   --muted: #a78bb8;
   --accent: #ff2d95;
