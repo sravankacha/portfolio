@@ -1,11 +1,7 @@
-import Link from "next/link";
 import { profile } from "./_data/profile";
-import { projects } from "./_data/projects";
 import EmailLink from "./_components/EmailLink";
 
 export default function Home() {
-  const featured = projects.slice(0, 3);
-
   return (
     <div className="max-w-5xl mx-auto px-6 py-16 sm:py-24">
       <section className="grid md:grid-cols-[1.2fr_1fr] gap-10 md:gap-14 items-center mb-28">
@@ -45,35 +41,6 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </section>
-
-      <section className="mb-24">
-        <div className="flex items-baseline justify-between mb-6">
-          <h2 className="font-display text-3xl font-medium heading-accent">
-            Selected projects
-          </h2>
-          <Link href="/projects" className="text-sm">
-            All projects →
-          </Link>
-        </div>
-        <ul className="space-y-4">
-          {featured.map((p) => (
-            <li
-              key={p.slug}
-              className="border border-border rounded-xl p-6 hover:border-accent transition-colors bg-surface"
-            >
-              <div className="flex items-baseline justify-between gap-4 mb-2">
-                <h3 className="font-display text-xl font-medium">{p.title}</h3>
-                <span className="font-mono text-xs text-muted shrink-0">
-                  {p.context}
-                </span>
-              </div>
-              <p className="text-foreground/80 leading-relaxed">
-                {p.description}
-              </p>
-            </li>
-          ))}
-        </ul>
       </section>
 
       <section>
