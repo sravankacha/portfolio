@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { profile } from "../_data/profile";
 import { experience } from "../_data/experience";
 import EmailLink from "../_components/EmailLink";
@@ -45,9 +46,14 @@ export default function AboutPage() {
         ))}
       </ul>
 
-      <h2 className="font-display text-3xl font-medium mb-8 heading-accent">
-        Experience
-      </h2>
+      <div className="flex items-baseline justify-between gap-4 flex-wrap mb-8">
+        <h2 className="font-display text-3xl font-medium heading-accent">
+          Experience
+        </h2>
+        <Link href="/resume" className="text-sm font-mono">
+          View full resume →
+        </Link>
+      </div>
       <div className="space-y-12">
         {experience.map((role) => (
           <article
