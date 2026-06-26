@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sravan Kachavarapu — Resume</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --accent: #6930c3;
+        --ink: #1a1a1a;
+        --muted: #555;
+      }
+      * { box-sizing: border-box; }
+      body {
+        font-family: Inter, "Helvetica Neue", system-ui, sans-serif;
+        font-size: 10pt;
+        line-height: 1.4;
+        color: var(--ink);
+        margin: 0;
+        padding: 0;
+      }
+      .page {
+        max-width: 7.6in;
+        margin: 0 auto;
+        padding: 0.42in 0.5in;
+      }
+      h1 {
+        font-family: Fraunces, Georgia, serif;
+        font-weight: 600;
+        font-size: 24pt;
+        line-height: 1.05;
+        letter-spacing: -0.025em;
+        margin: 0 0 4pt;
+        color: #000;
+      }
+      .contact {
+        font-size: 9.5pt;
+        color: var(--muted);
+        margin-bottom: 12pt;
+      }
+      .contact a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      .summary {
+        font-size: 10.25pt;
+        margin: 0 0 14pt;
+        color: #2a2a2a;
+      }
+      h2 {
+        font-family: Fraunces, Georgia, serif;
+        font-weight: 600;
+        font-size: 11.5pt;
+        color: var(--accent);
+        margin: 13pt 0 6pt;
+        padding-bottom: 2pt;
+        border-bottom: 1.25pt solid var(--accent);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .role {
+        margin-bottom: 9pt;
+        page-break-inside: avoid;
+      }
+      .role-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12pt;
+        margin-bottom: 1pt;
+      }
+      .role-title {
+        font-weight: 600;
+        font-size: 10.75pt;
+        color: #000;
+      }
+      .role-company {
+        color: var(--muted);
+        font-style: italic;
+      }
+      .role-dates {
+        font-size: 9.5pt;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      ul {
+        margin: 3pt 0 0;
+        padding: 0 0 0 14pt;
+      }
+      li {
+        margin-bottom: 2pt;
+      }
+      .skills {
+        display: grid;
+        grid-template-columns: 132pt 1fr;
+        gap: 5pt 14pt;
+        font-size: 10pt;
+      }
+      .skills .cat {
+        font-weight: 600;
+        color: #000;
+      }
+      .edu {
+        font-size: 10.25pt;
+        margin-bottom: 3pt;
+      }
+      .edu strong {
+        color: #000;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1>Sravan Kumar Kachavarapu</h1>
+      <div class="contact">
+        <a href="https://www.sravankacha.com">www.sravankacha.com</a> ·
+        sravankacha [at] gmail.com · 773-630-1169 · Washington, DC ·
+        <a href="https://www.linkedin.com/in/sravankumarkachavarapu">LinkedIn</a>
+      </div>
+
+      <p class="summary">
+        Staff Software Engineer with a decade of building inclusive interfaces
+        at scale. I lead cross-team initiatives — design systems,
+        accessibility compliance, frontend platforms, mobile applications —
+        and mentor engineers from new grad through senior. I work where
+        engineering, product, and design overlap: end-to-end solutioning,
+        regulatory risk, and the architectural decisions that make complex
+        products feel simple to ship.
+      </p>
+
+      <h2>Experience</h2>
+
+      <div class="role">
+        <div class="role-head">
+          <div>
+            <span class="role-title">Staff Software Engineer</span> ·
+            <span class="role-company">Meta</span>
+          </div>
+          <div class="role-dates">Current</div>
+        </div>
+        <ul>
+          <li>
+            Risk &amp; Compliance Tools and Automation — turn regulatory and
+            policy requirements into reliable, repeatable software for risk
+            and compliance teams operating at Meta&apos;s scale.
+          </li>
+        </ul>
+      </div>
+
+      <div class="role">
+        <div class="role-head">
+          <div>
+            <span class="role-title">Principal Front-end Engineer, Manager</span>
+            · <span class="role-company">EAB</span>
+          </div>
+          <div class="role-dates">Jan 2020 – Aug 2021</div>
+        </div>
+        <ul>
+          <li>
+            People-managed a team of frontend engineers while continuing
+            technical leadership of platform, design system, and accessibility
+            initiatives below. Owned roadmap, hiring, performance, and the
+            quality bar.
+          </li>
+        </ul>
+      </div>
+
+      <div class="role">
+        <div class="role-head">
+          <div>
+            <span class="role-title">Principal Front-end Engineer</span> ·
+            <span class="role-company">EAB</span>
+          </div>
+          <div class="role-dates">Sep 2017 – Jan 2020</div>
+        </div>
+        <ul>
+          <li>
+            Led WCAG 2.1 compliance across multiple product teams: audits,
+            prioritized remediation, mitigation patterns, design-system and
+            implementation-guideline updates, accessibility-focused code
+            review.
+          </li>
+          <li>
+            Built unified enterprise design system + Web Components library
+            for EAB products — supporting multiple frontend frameworks;
+            authored in TypeScript with per-component accessibility and
+            performance audits.
+          </li>
+          <li>
+            Architected application framework with shared services (auth,
+            routing, tracking, logging, caching, network, error handling) and
+            prefabricated UI solutions; webpack/rollup tooling and CLI,
+            Chai/Mocha/Cypress test support, CI for builds, tests, audits,
+            and deploys.
+          </li>
+          <li>
+            Built a highly configurable course-catalog search interface:
+            metadata contracts driving dynamic form fields, Elasticsearch
+            metadata transforms, runtime-configurable per school.
+          </li>
+          <li>
+            Oversaw frontend for Navigate Smart Guidance (desktop + mobile).
+            Established best practices and software patterns for rapid,
+            performant UI development; mentored junior engineers.
+          </li>
+          <li>
+            Managed releases, triaged critical high-priority issues, partnered
+            with UI/UX on a consistent EAB brand experience across products.
+          </li>
+        </ul>
+      </div>
+
+      <div class="role">
+        <div class="role-head">
+          <div>
+            <span class="role-title">Senior Front End Engineer</span> ·
+            <span class="role-company">The Advisory Board Company</span>
+          </div>
+          <div class="role-dates">Nov 2015 – Sep 2017</div>
+        </div>
+        <ul>
+          <li>
+            Led UI development across multiple product features and a
+            multi-product unification initiative on Navigate.
+          </li>
+          <li>
+            Explored and introduced a universal Web Components-based framework
+            to accelerate development across multiple teams.
+          </li>
+          <li>
+            Led accessibility-first development — upgraded internal UI
+            framework and tooling to incorporate accessibility solutions
+            across products and achieve certification.
+          </li>
+          <li>
+            Delivered Academic Planning and Course Registration features:
+            client-side rules engine for schedule validation, WebSocket-based
+            real-time collaboration between students and advisors.
+          </li>
+          <li>
+            Bootstrapped Navigate/Guide mobile app on Angular/Ionic/Cordova —
+            group messaging, task management, appointment scheduling,
+            multi-school auth integration, offline experience, push
+            notifications, native calendar integration.
+          </li>
+          <li>
+            Streamlined build processes across products; mentored junior
+            developers in software patterns, best practices, tooling, and
+            frontend frameworks.
+          </li>
+        </ul>
+      </div>
+
+      <div class="role">
+        <div class="role-head">
+          <div>
+            <span class="role-title">Front End Engineer</span> ·
+            <span class="role-company">The Advisory Board Company</span>
+          </div>
+          <div class="role-dates">Aug 2014 – Nov 2015</div>
+        </div>
+        <ul>
+          <li>
+            Built a common UI framework to accelerate development across
+            multiple product teams and maintain consistent brand for the
+            Education Advisory Board.
+          </li>
+          <li>
+            Led a team of three developers building the EAB Navigate mobile
+            app for both Android and iOS.
+          </li>
+          <li>
+            Partnered with product managers and lead architects on end-to-end
+            solutions; collaborated with UX and visual designers on UI widgets
+            for mobile + desktop.
+          </li>
+        </ul>
+      </div>
+
+      <div class="role">
+        <div class="role-head">
+          <div>
+            <span class="role-title">UX/UI Designer &amp; Front-End Developer</span>
+            · <span class="role-company">FanFueled</span>
+          </div>
+          <div class="role-dates">Jun 2012 – Aug 2014</div>
+        </div>
+        <ul>
+          <li>
+            Defined branding and product UX strategy across FanFueled
+            Shopping, Engage, and Events — information architecture,
+            wireframes, rapid prototypes, comprehensive UX documentation.
+          </li>
+          <li>
+            Built responsive social-engagement campaigns for Bud Light
+            Platinum Nights and Michelob ULTRA Foursome.
+          </li>
+          <li>
+            Designed and implemented checkout, search, social-sharing, and
+            personalization features; high-fidelity HTML/CSS/JS/AJAX
+            prototypes that drove design decisions.
+          </li>
+        </ul>
+      </div>
+
+      <h2>Skills</h2>
+      <div class="skills">
+        <div class="cat">Engineering leadership</div>
+        <div>
+          Technical strategy · design-system ownership · cross-team
+          initiatives · code review · mentorship · hiring · roadmap
+        </div>
+
+        <div class="cat">Frontend platform</div>
+        <div>
+          TypeScript · React · Web Components · Angular · Vue · webpack ·
+          rollup · Vite · Jest · Cypress · Mocha
+        </div>
+
+        <div class="cat">Accessibility</div>
+        <div>WCAG 2.1 · Section 508 · ARIA · screen-reader validation</div>
+
+        <div class="cat">Mobile</div>
+        <div>Ionic · Cordova · iOS + Android app delivery</div>
+
+        <div class="cat">Infrastructure &amp; CI/CD</div>
+        <div>
+          AWS (S3, CloudFront, IAM) · GitHub Actions · GitLab CI · Lighthouse
+          CI
+        </div>
+
+        <div class="cat">Design &amp; UX</div>
+        <div>
+          Information architecture · interaction design · rapid prototyping
+          · design tokens
+        </div>
+      </div>
+
+      <h2>Education</h2>
+      <div class="edu">
+        <strong>DePaul University</strong> · Master&apos;s, Human-Computer
+        Interaction
+      </div>
+      <div class="edu">
+        <strong>Birla Institute of Technology and Science (BITS Pilani)</strong>
+        · Bachelor of Engineering (Hons), Computer Science
+      </div>
+    </div>
+  </body>
+</html>
