@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
+import { Fraunces, Inter, JetBrains_Mono, Pacifico } from "next/font/google";
 import "./globals.css";
 import Header from "./_components/Header";
 import Footer from "./_components/Footer";
@@ -27,10 +27,17 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
+const pacifico = Pacifico({
+  variable: "--font-pacifico",
+  subsets: ["latin"],
+  display: "swap",
+  weight: "400",
+});
+
 const SITE_URL = "https://sravankacha.com";
 const TITLE = `${profile.name} — Product, Design, Engineering`;
 const DESCRIPTION =
-  "Problem solver focused on user problems — using data to understand, validate, and ship solutions with depth. Senior Software Engineer at Meta with experience across product, design, solution architecture, regulatory risk, and privacy.";
+  "Problem solver focused on user problems — using data to understand, validate, and ship solutions with depth. Staff Software Engineer at Meta with experience across product, design, solution architecture, regulatory risk, and privacy.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -45,7 +52,7 @@ export const metadata: Metadata = {
   publisher: profile.name,
   keywords: [
     "Sravan Kachavarapu",
-    "Senior Software Engineer",
+    "Staff Software Engineer",
     "Meta",
     "Frontend Engineer",
     "Product Development",
@@ -113,7 +120,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${fraunces.variable} ${jetbrains.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${inter.variable} ${fraunces.variable} ${jetbrains.variable} ${pacifico.variable} h-full antialiased`}
     >
       <head>
         <ThemeInitScript />

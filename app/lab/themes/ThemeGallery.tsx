@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { themes, STORAGE_KEY, type ThemeId } from "../../_variants/themes";
 
-const previews: Record<ThemeId, { bg: string; ink: string; accent: string; sample: string }> = {
+const previews: Record<
+  ThemeId,
+  { bg: string; ink: string; accent: string; sample: string; font?: string; glow?: string }
+> = {
   editorial: {
     bg: "#ffffff",
     ink: "#000000",
@@ -15,6 +18,14 @@ const previews: Record<ThemeId, { bg: string; ink: string; accent: string; sampl
     ink: "#062a3d",
     accent: "linear-gradient(135deg, #023e8a, #00b4d8)",
     sample: "Sravan / Ocean",
+  },
+  diner: {
+    bg: "radial-gradient(ellipse at 20% 20%, #2a0a3e 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, #00345c 0%, transparent 55%), #050008",
+    ink: "#ffffff",
+    accent: "#ff2d95",
+    sample: "Sravan / Diner",
+    font: "var(--font-pacifico), cursive",
+    glow: "0 0 6px #fff, 0 0 14px #ff2d95, 0 0 28px #ff2d95",
   },
 };
 
@@ -55,13 +66,21 @@ export default function ThemeGallery() {
               >
                 <span
                   className="font-display text-2xl font-medium"
-                  style={{
-                    background: p.accent,
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                    color: "transparent",
-                    WebkitTextFillColor: "transparent",
-                  }}
+                  style={
+                    p.glow
+                      ? {
+                          fontFamily: p.font,
+                          color: p.ink,
+                          textShadow: p.glow,
+                        }
+                      : {
+                          background: p.accent,
+                          WebkitBackgroundClip: "text",
+                          backgroundClip: "text",
+                          color: "transparent",
+                          WebkitTextFillColor: "transparent",
+                        }
+                  }
                 >
                   {p.sample}
                 </span>

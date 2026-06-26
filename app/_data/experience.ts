@@ -9,7 +9,7 @@ export type Role = {
 export const experience: Role[] = [
   {
     company: "Meta",
-    title: "Senior Software Engineer",
+    title: "Staff Software Engineer",
     period: "Current",
     highlights: [
       {

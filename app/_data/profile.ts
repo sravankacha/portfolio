@@ -1,9 +1,9 @@
 export const profile = {
   name: "Sravan Kachavarapu",
-  tagline: "Senior Software Engineer at Meta",
+  tagline: "Staff Software Engineer at Meta",
   bio: "Problem solver focused on user problems — using data to understand them deeply, validate solutions, and build with depth. Skilled across product development, design, end-to-end solution architecture, team leadership, regulatory risk, and privacy. Built deep frontend expertise along the way — accessibility, scalability, UI frameworks, and design systems.",
   longBio:
-    "I solve problems where engineering, product, and design overlap — using data to understand users, validate ideas, and ship solutions with depth. I work across product development, design, end-to-end architecture, team leadership, regulatory risk, solutioning, and privacy. I'm currently a Senior Software Engineer at Meta. My foundation is frontend: a decade building accessible, scalable interfaces across UI frameworks (React, Angular, Web Components) and leading design system work at EAB.",
+    "I solve problems where engineering, product, and design overlap — using data to understand users, validate ideas, and ship solutions with depth. I work across product development, design, end-to-end architecture, team leadership, regulatory risk, solutioning, and privacy. I'm currently a Staff Software Engineer at Meta. My foundation is frontend: a decade building accessible, scalable interfaces across UI frameworks (React, Angular, Web Components) and leading design system work at EAB.",
   location: "Washington, DC",
   emailUser: "sravankacha",
   emailDomain: "gmail.com",
