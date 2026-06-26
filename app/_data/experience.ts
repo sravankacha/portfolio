@@ -21,17 +21,31 @@ export const experience: Role[] = [
   },
   {
     company: "EAB",
-    title: "Principal Frontend Engineer",
-    period: "Previous",
+    title: "Principal Front-end Engineer, Manager",
+    period: "Jan 2020 – Aug 2021",
     highlights: [
       {
-        heading: "Accessibility & WCAG Compliance",
+        heading: "Frontend engineering leadership",
         description:
-          "Led WCAG 2.1 compliance across multiple product teams.",
+          "Continued the work below as a people manager and technical lead — owning roadmap, design-system standards, and accessibility compliance across product teams.",
+      },
+    ],
+  },
+  {
+    company: "EAB",
+    title: "Principal Front-end Engineer",
+    period: "Sep 2017 – Jan 2020",
+    summary:
+      "Washington DC–Baltimore Area",
+    highlights: [
+      {
+        heading: "Accessibility & WCAG 2.1 Compliance",
+        description:
+          "Led development effort across multiple product teams to meet WCAG 2.1 compliance.",
         bullets: [
-          "Ran manual and automated WCAG 2.1 audits across multiple products",
-          "Created prioritized remediation plans and authored mitigation patterns",
-          "Updated the component library and implementation guidelines to address issues across products",
+          "Manual and automated audits across multiple products",
+          "Prioritized remediation plans and mitigation patterns",
+          "Updated the component library and implementation guidelines",
           "Reviewed solutions and code from developers against best practices",
           "Contributed accessibility patterns to design system documentation",
         ],
@@ -39,18 +53,18 @@ export const experience: Role[] = [
       {
         heading: "Enterprise Design System & UI Component Library",
         description:
-          "Built a unified design system and Web Components library for enterprise products across multiple frontend frameworks.",
+          "Built a unified enterprise design system for products within EAB. Developed UI components based on Web Components to enable support across multiple front-end frameworks and libraries.",
         bullets: [
-          "Designed system that adhered to EAB brand and accessibility compliance",
-          "Built component library with Web Components for framework portability",
-          "Audited each component for accessibility and performance",
-          "Authored everything in TypeScript",
+          "Design tokens and patterns aligned with EAB brand + accessibility",
+          "Component library on Web Components for framework portability",
+          "Per-component accessibility and performance audits",
+          "Authored in TypeScript",
         ],
       },
       {
-        heading: "Micro-Frontend Services",
+        heading: "Application Framework",
         description:
-          "Built application framework with common services and prefabricated solutions to bootstrap frontend applications rapidly.",
+          "Built application framework with common service modules and prefabricated solutions to rapidly bootstrap frontend applications.",
         bullets: [
           "App-level components for navigation, workflows, forms, datatables, page patterns",
           "Application services for auth, routing, tracking, logging, caching, network, error handling",
@@ -60,7 +74,7 @@ export const experience: Role[] = [
         ],
       },
       {
-        heading: "Configured Course Catalog Search",
+        heading: "Configurable Course Catalog Search",
         description:
           "Built a highly configurable interface with advanced filters to search course catalogs across multiple parameters.",
         bullets: [
@@ -73,12 +87,18 @@ export const experience: Role[] = [
     ],
   },
   {
-    company: "EAB / The Advisory Board Company",
-    title: "Senior Frontend Engineer",
-    period: "Previous",
+    company: "The Advisory Board Company",
+    title: "Senior Front End Engineer",
+    period: "Nov 2015 – Sep 2017",
+    summary: "Washington DC–Baltimore Area",
     highlights: [
       {
-        heading: "WCAG Compliance for Navigate",
+        heading: "Lead UI development on multiple product features",
+        description:
+          "Led UI development efforts on multiple product features — academic planning, scheduling, the Navigate/Guide mobile app, the rapid-application framework, and Navigate's WCAG 2.0 compliance work.",
+      },
+      {
+        heading: "WCAG 2.0 Compliance for Navigate",
         description:
           "Brought a complex Angular SPA to WCAG 2.0 compliance.",
         bullets: [
@@ -111,22 +131,12 @@ export const experience: Role[] = [
         ],
       },
       {
-        heading: "Rapid Application Framework",
-        description:
-          "Tooling and solutions for SPA development on AngularJS.",
-        bullets: [
-          "Application services for networking, routing, logging, tracking",
-          "Reusable accessible components for rapid page composition",
-          "Standard tooling for builds, tests, and deploys",
-        ],
-      },
-      {
         heading: "Navigate/Guide Mobile App",
         description:
           "Bootstrapped and delivered the company's first mobile app.",
         bullets: [
           "Mobile app on Angular/Ionic/Cordova",
-          "Group messaging, task management, appointment scheduling features",
+          "Group messaging, task management, appointment scheduling",
           "Auth integration across multiple school systems",
           "Offline experience, caching, push notifications, native calendar integration",
           "Build, optimization, signing, and app-store submission pipelines",
@@ -135,11 +145,30 @@ export const experience: Role[] = [
     ],
   },
   {
+    company: "The Advisory Board Company",
+    title: "Front End Engineer",
+    period: "Aug 2014 – Nov 2015",
+    summary: "Washington D.C. Metro Area",
+    highlights: [
+      {
+        heading: "Rapid Application Framework",
+        description:
+          "Built a common UI framework to accelerate development across multiple product teams — the foundation that later evolved into the design system and micro-frontend services at EAB.",
+        bullets: [
+          "Application services for networking, routing, logging, tracking",
+          "Reusable accessible components for rapid page composition",
+          "Standard tooling for builds, tests, and deploys",
+          "AngularJS as the core SPA stack",
+        ],
+      },
+    ],
+  },
+  {
     company: "FanFueled",
-    title: "UI/UX Designer & Frontend Developer",
-    period: "Earlier",
+    title: "UX/UI Designer & Front-End Developer",
+    period: "Jun 2012 – Aug 2014",
     summary:
-      "FanFueled was an engagement marketing company building social gaming solutions for brands, artists, and festivals. We used patented software to track the ripple of influence, incentivizing peer-to-peer marketing.",
+      "Greater Chicago Area. FanFueled was an engagement marketing company building social gaming solutions for brands, artists, and festivals. We used patented software to track the ripple of influence, incentivizing peer-to-peer marketing.",
     highlights: [
       {
         heading: "Platinum Nights",
@@ -169,10 +198,23 @@ export const experience: Role[] = [
         bullets: [
           "New UI for ticket purchase and checkout",
           "Online tickets, order-confirmation emails, multi-device + print layouts",
-          "FanFueled Box-Office web app for Kiosks",
+          "FanFueled Box-Office web app for kiosks",
           "Heuristic and competitive analysis, user testing",
           "Embeddable ticket-purchase widget",
         ],
+      },
+    ],
+  },
+  {
+    company: "FanFueled",
+    title: "UI Designer Intern",
+    period: "Jan 2012 – Jun 2012",
+    summary: "Greater Chicago Area",
+    highlights: [
+      {
+        heading: "Fan engagement platform — ideation & concept",
+        description:
+          "Worked with the creative director to ideate and conceptualize the fan engagement platform — early UI concepts, brand exploration, and mockups for what became FanFueled Engage.",
       },
     ],
   },
