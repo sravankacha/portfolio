@@ -27,6 +27,12 @@ const previews: Record<
     font: "var(--font-pacifico), cursive",
     glow: "0 0 6px #fff, 0 0 14px #ff2d95, 0 0 28px #ff2d95",
   },
+  origami: {
+    bg: "#cfe4dd",
+    ink: "#21312b",
+    accent: "linear-gradient(135deg, #21312b 40%, #3f8f7b 40%, #3f8f7b 70%, #d0592a 70%)",
+    sample: "Sravan / Origami",
+  },
 };
 
 export default function ThemeGallery() {

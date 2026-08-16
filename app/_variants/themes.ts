@@ -1,4 +1,4 @@
-export type ThemeId = "editorial" | "ocean" | "diner";
+export type ThemeId = "editorial" | "ocean" | "diner" | "origami";
 
 export type Theme = {
   id: ThemeId;
@@ -21,6 +21,11 @@ export const themes: Theme[] = [
     id: "diner",
     label: "diner",
     tagline: "Neon nights — Roadhouse signs",
+  },
+  {
+    id: "origami",
+    label: "origami",
+    tagline: "Folded paper — shapeshifting beasts",
   },
 ];
 
