@@ -22,7 +22,7 @@ function subscribeNarrow(cb: () => void) {
 const isNarrow = () => window.matchMedia(NARROW).matches;
 
 export default function PipeLab() {
-  const [speed, setSpeed] = useState(9);
+  const [speed, setSpeed] = useState(6);
   const [wander, setWander] = useState(true);
   const [resetToken, setResetToken] = useState(0);
   const [steers, setSteers] = useState(0);
@@ -71,13 +71,13 @@ export default function PipeLab() {
       >
         <label className="block text-xs">
           <span className="flex justify-between text-foreground/80">
-            <span>Speed</span>
+            <span>Flow speed</span>
             <span className="font-mono">{speed}</span>
           </span>
           <input
             type="range"
-            min={2}
-            max={24}
+            min={1}
+            max={20}
             step={1}
             value={speed}
             onChange={(e) => setSpeed(Number(e.target.value))}
@@ -90,7 +90,7 @@ export default function PipeLab() {
             checked={wander}
             onChange={(e) => setWander(e.target.checked)}
           />
-          Wander and loop on its own
+          Keep extending on its own
         </label>
         <button
           type="button"
@@ -103,8 +103,9 @@ export default function PipeLab() {
           Start over
         </button>
         <p className="text-[11px] leading-relaxed text-muted border-t border-border/40 pt-3">
-          Click anywhere to send the pipe there. Arrow keys steer too; space
-          picks a random turn.
+          Click anywhere to extend the pipe to that point, deeper into the
+          screen. Everything it has drawn stays. Arrow keys extend it too;
+          space picks a random point.
         </p>
       </FloatingPanel>
 
@@ -114,7 +115,7 @@ export default function PipeLab() {
           steers === 0 ? "opacity-100" : "opacity-0"
         }`}
       >
-        click anywhere to bend the pipe
+        click anywhere to extend the pipe
       </p>
     </div>
   );

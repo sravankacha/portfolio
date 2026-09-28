@@ -12,7 +12,7 @@ const experiments = [
     slug: "pipe",
     title: "Endless pipe",
     summary:
-      "A banded pipe loops endlessly into the screen, inspired by an in-flight map animation. Click anywhere and it bends toward that point in a new pair of colors.",
+      "A banded pipe streams away into the screen, inspired by an in-flight map animation. Click anywhere and it grows toward that point, keeping every path it has drawn.",
     tag: "interaction · webgl",
   },
   {

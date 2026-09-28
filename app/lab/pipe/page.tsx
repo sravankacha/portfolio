@@ -3,7 +3,7 @@ import PipeLab from "./PipeLab";
 export const metadata = {
   title: "Endless pipe",
   description:
-    "An endless banded pipe that loops into the screen. Click anywhere and it bends toward that point, in a new pair of colors.",
+    "An endless banded pipe that streams away into the screen. Click anywhere and it grows toward that point, keeping every path it has drawn.",
   alternates: { canonical: "https://sravankacha.com/lab/pipe/" },
 };
 
