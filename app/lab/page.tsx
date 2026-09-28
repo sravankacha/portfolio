@@ -9,6 +9,13 @@ export const metadata = {
 
 const experiments = [
   {
+    slug: "pipe",
+    title: "Endless pipe",
+    summary:
+      "A banded pipe loops endlessly into the screen, inspired by an in-flight map animation. Click anywhere and it bends toward that point in a new pair of colors.",
+    tag: "interaction · webgl",
+  },
+  {
     slug: "globe",
     title: "Globe",
     summary:
