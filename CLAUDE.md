@@ -24,6 +24,8 @@ If the dev server serves stale CSS, stop it, `rm -rf .next`, restart.
 
 ## Architecture
 - **Themes:** registry in `app/_variants/themes.ts`. Each theme is a `[data-theme="<id>"]` block of CSS variables in `app/globals.css`. `ThemeInitScript` sets the theme before paint (`?theme=` param, then localStorage, then random). Themes with heavy hero art use a Gate component (see `OrigamiHeroGate.tsx`) that only mounts the canvas when that theme is active.
+- **Origami hero:** animals are sculpted from blended ellipsoids and round cones in `app/_components/origami/animals.ts`, then meshed (surface nets, ~15–40k faceted triangles) in a module Web Worker. Transitions crumple into a shared paper ball via morph targets, so animals need no shared topology. Add an animal by writing a sculpt function and an `ANIMALS` entry.
+- **Web Workers:** create them with `new Worker(new URL("./x.worker.ts", import.meta.url), { type: "module" })`. Without `type: "module"`, Turbopack copies the raw `.ts` file instead of bundling it.
 - **Lab:** each experiment is `app/lab/<slug>/` with `page.tsx` (metadata and canonical) and a client component. Fullscreen labs use `app/lab/_shared/LabChrome.tsx` for the back button and panels. Register every new experiment in the `experiments` list in `app/lab/page.tsx`.
 
 ## Showcase bar for new themes and experiments
@@ -45,3 +47,13 @@ Before calling a creative exploration done:
 - Three.js: custom geometry must use the attribute name `position`. Rotate the mesh, not the geometry, for animation. Keep framebuffers under 2^25 pixels.
 - CloudFront relies on the `spa-uri-rewrite` function to map `/path/` to `/path/index.html`. New routes need no infra change.
 - After a Playwright version bump, run `npx playwright install chromium` or the screenshot script fails.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

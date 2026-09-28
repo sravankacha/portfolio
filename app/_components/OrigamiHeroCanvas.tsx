@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import type * as THREENS from "three";
+import { ANIMALS } from "./origami/animals";
+import type { SculptMesh } from "./origami/sculpt";
 
 const THREE_CDN = "https://esm.sh/three@0.180.0";
 
@@ -13,401 +15,29 @@ function loadThree(): Promise<typeof THREENS> {
 }
 
 /* =========================================================
-   Shared-topology paper animals.
+   Paper animals.
 
-   Every animal is the same 15 parts (boxes with hand-jittered
-   corners) in the same order, so all shapes share one vertex
-   layout and morphing is a straight per-vertex lerp. Parts an
-   animal doesn't need shrink to a speck and "fold away".
-
-   Part order: body, chest, hips, head, snout, earL, earR,
-   legFL, legFR, legBL, legBR, tail, app1, app2, app3
-   (app1–3 = signature appendage chain: jaguar tail,
-   rhino horns, elephant trunk)
+   Each animal is sculpted from blended anatomy primitives and
+   meshed into ~15–40k flat-shaded paper facets in a worker
+   (see ./origami). Animals don't share topology, so the refold
+   goes through a crumpled paper ball: every mesh carries a
+   morph target onto the same ball, so the swap at full crumple
+   is seamless.
    ========================================================= */
 
-type PartSpec = {
-  pos: [number, number, number];
-  size: [number, number, number];
-  rot?: [number, number, number];
-  taperTop?: number; // scale x/z of +y corners
-  taperBottom?: number; // scale x/z of -y corners
-};
-
-type AnimalSpec = {
-  name: string;
-  parts: PartSpec[];
-  colors: number[]; // one hex per part — colored-paper panels
-  shadow: [number, number]; // ground blob scale x/z
-};
-
-// Shared colored-paper palette (studio papercraft style)
-const P = {
-  cream: 0xf3ede0,
-  tan: 0xead9b3,
-  oat: 0xe5d3b8,
-  olive: 0xb39a5e,
-  goldenrod: 0xc9b077,
-  mustard: 0xe3a72f,
-  orange: 0xe07230,
-  terracotta: 0xc94f32,
-  rust: 0xa65a33,
-  plum: 0x5c4a6e,
-  teal: 0x4d9b85,
-  blush: 0xefdcd2,
-  slate: 0x7295a8,
-  slateDeep: 0x5f8296,
-  slateLight: 0x81a2b2,
-  ink: 0x54707e,
-};
-
-const PART_COUNT = 15;
-const GRID = 4; // subdivisions per box face — every face is a 4x4 sheet of creased facets
-const VERTS_PER_PART = 6 * GRID * GRID * 6; // faces × cells × 2 tris × 3 verts
-const VERT_COUNT = PART_COUNT * VERTS_PER_PART;
-
-// Cube corners: index = x + y*2 + z*4, coords in {-0.5, +0.5}
-// Faces as corner quads (a,b,c,d) -> tris (a,b,c) (a,c,d), CCW outside
-const FACES: [number, number, number, number][] = [
-  [0, 4, 6, 2], // -x
-  [1, 3, 7, 5], // +x
-  [0, 1, 5, 4], // -y
-  [2, 6, 7, 3], // +y
-  [0, 2, 3, 1], // -z
-  [4, 5, 7, 6], // +z
-];
-
-// Deterministic per-(part, corner) pseudo-random in [-1, 1]
-function rnd(part: number, corner: number, salt: number): number {
-  const s = Math.sin(part * 127.1 + corner * 311.7 + salt * 74.7) * 43758.5453;
-  return (s - Math.floor(s)) * 2 - 1;
-}
-
-// Bilinear point on the quad a→b→c→d at (u, v)
-function bilerp(
-  A: number[],
-  B: number[],
-  C: number[],
-  D: number[],
-  u: number,
-  v: number
-): [number, number, number] {
-  const out: [number, number, number] = [0, 0, 0];
-  for (let k = 0; k < 3; k++) {
-    out[k] = (1 - v) * ((1 - u) * A[k] + u * B[k]) + v * ((1 - u) * D[k] + u * C[k]);
-  }
-  return out;
-}
-
-function buildShape(spec: AnimalSpec): Float32Array {
-  const out = new Float32Array(VERT_COUNT * 3);
-  let w = 0;
-  for (let p = 0; p < PART_COUNT; p++) {
-    const part = spec.parts[p];
-    const [px, py, pz] = part.pos;
-    const [sx, sy, sz] = part.size;
-    const [rx, ry, rz] = part.rot ?? [0, 0, 0];
-    const tTop = part.taperTop ?? 1;
-    const tBot = part.taperBottom ?? 1;
-
-    // 8 corners, jittered identically across animals so creases morph coherently
-    const corners: [number, number, number][] = [];
-    for (let c = 0; c < 8; c++) {
-      let x = (c & 1 ? 0.5 : -0.5) + rnd(p, c, 1) * 0.085;
-      let y = (c & 2 ? 0.5 : -0.5) + rnd(p, c, 2) * 0.085;
-      let z = (c & 4 ? 0.5 : -0.5) + rnd(p, c, 3) * 0.085;
-      const taper = c & 2 ? tTop : tBot;
-      x *= taper;
-      z *= taper;
-      // scale
-      x *= sx;
-      y *= sy;
-      z *= sz;
-      // rotate XYZ euler
-      let cy = Math.cos(rx), sy_ = Math.sin(rx);
-      let y1 = y * cy - z * sy_;
-      let z1 = y * sy_ + z * cy;
-      y = y1;
-      z = z1;
-      cy = Math.cos(ry);
-      sy_ = Math.sin(ry);
-      const x1 = x * cy + z * sy_;
-      z1 = -x * sy_ + z * cy;
-      x = x1;
-      z = z1;
-      cy = Math.cos(rz);
-      sy_ = Math.sin(rz);
-      const x2 = x * cy - y * sy_;
-      y1 = x * sy_ + y * cy;
-      x = x2;
-      y = y1;
-      corners.push([x + px, y + py, z + pz]);
-    }
-
-    for (let f = 0; f < FACES.length; f++) {
-      const [a, b, c, d] = FACES[f];
-      const A = corners[a];
-      const B = corners[b];
-      const C = corners[c];
-      const D = corners[d];
-      // face normal + size drive the interior crease displacement
-      const e1 = [B[0] - A[0], B[1] - A[1], B[2] - A[2]];
-      const e2 = [D[0] - A[0], D[1] - A[1], D[2] - A[2]];
-      let nx = e1[1] * e2[2] - e1[2] * e2[1];
-      let ny = e1[2] * e2[0] - e1[0] * e2[2];
-      let nz = e1[0] * e2[1] - e1[1] * e2[0];
-      const nl = Math.hypot(nx, ny, nz) || 1;
-      nx /= nl;
-      ny /= nl;
-      nz /= nl;
-      const faceSize =
-        (Math.hypot(e1[0], e1[1], e1[2]) + Math.hypot(e2[0], e2[1], e2[2])) / 2;
-      const amp = faceSize * 0.062;
-
-      // grid points; edges stay on the bilinear sheet so parts remain watertight,
-      // interior points pop in/out along the normal to form fold facets
-      const pts: [number, number, number][][] = [];
-      for (let gu = 0; gu <= GRID; gu++) {
-        pts.push([]);
-        for (let gv = 0; gv <= GRID; gv++) {
-          const P = bilerp(A, B, C, D, gu / GRID, gv / GRID);
-          if (gu > 0 && gu < GRID && gv > 0 && gv < GRID) {
-            const h = rnd(p, f * 131 + gu * 17 + gv, 31) * amp;
-            P[0] += nx * h;
-            P[1] += ny * h;
-            P[2] += nz * h;
-          }
-          pts[gu].push(P);
-        }
-      }
-      for (let gu = 0; gu < GRID; gu++) {
-        for (let gv = 0; gv < GRID; gv++) {
-          const tris = [
-            pts[gu][gv],
-            pts[gu + 1][gv],
-            pts[gu + 1][gv + 1],
-            pts[gu][gv],
-            pts[gu + 1][gv + 1],
-            pts[gu][gv + 1],
-          ];
-          for (const P of tris) {
-            out[w++] = P[0];
-            out[w++] = P[1];
-            out[w++] = P[2];
-          }
-        }
-      }
-    }
-  }
-  // Center the animal's x-extent so every shape sits mid-frame
-  let minX = Infinity;
-  let maxX = -Infinity;
-  for (let i = 0; i < out.length; i += 3) {
-    if (out[i] < minX) minX = out[i];
-    if (out[i] > maxX) maxX = out[i];
-  }
-  const cx = (minX + maxX) / 2;
-  for (let i = 0; i < out.length; i += 3) out[i] -= cx;
-  return out;
-}
-
-// Per-vertex crumple directions, bilinearly blended from per-corner dirs so
-// coincident vertices (shared corners/edges) move together and the paper
-// crumples without tearing. Interior grid points get extra chaos.
-function buildCrumpleDirs(): Float32Array {
-  const out = new Float32Array(VERT_COUNT * 3);
-  let w = 0;
-  for (let p = 0; p < PART_COUNT; p++) {
-    const dirs: [number, number, number][] = [];
-    for (let c = 0; c < 8; c++) {
-      dirs.push([rnd(p, c, 11), rnd(p, c, 12), rnd(p, c, 13)]);
-    }
-    for (let f = 0; f < FACES.length; f++) {
-      const [a, b, c, d] = FACES[f];
-      const grid: [number, number, number][][] = [];
-      for (let gu = 0; gu <= GRID; gu++) {
-        grid.push([]);
-        for (let gv = 0; gv <= GRID; gv++) {
-          const P = bilerp(dirs[a], dirs[b], dirs[c], dirs[d], gu / GRID, gv / GRID);
-          if (gu > 0 && gu < GRID && gv > 0 && gv < GRID) {
-            P[0] += rnd(p, f * 131 + gu * 17 + gv, 41) * 0.5;
-            P[1] += rnd(p, f * 131 + gu * 17 + gv, 42) * 0.5;
-            P[2] += rnd(p, f * 131 + gu * 17 + gv, 43) * 0.5;
-          }
-          grid[gu].push(P);
-        }
-      }
-      for (let gu = 0; gu < GRID; gu++) {
-        for (let gv = 0; gv < GRID; gv++) {
-          const tris = [
-            grid[gu][gv],
-            grid[gu + 1][gv],
-            grid[gu + 1][gv + 1],
-            grid[gu][gv],
-            grid[gu + 1][gv + 1],
-            grid[gu][gv + 1],
-          ];
-          for (const P of tris) {
-            out[w++] = P[0];
-            out[w++] = P[1];
-            out[w++] = P[2];
-          }
-        }
-      }
-    }
-  }
-  return out;
-}
-
-// Per-vertex luminance variance: every fold cell reads as its own paper panel
-function buildShadeFactors(): Float32Array {
-  const out = new Float32Array(VERT_COUNT);
-  let w = 0;
-  for (let p = 0; p < PART_COUNT; p++) {
-    for (let f = 0; f < FACES.length; f++) {
-      for (let gu = 0; gu < GRID; gu++) {
-        for (let gv = 0; gv < GRID; gv++) {
-          const shade = 1 + rnd(p, f * 131 + gu * 13 + gv, 51) * 0.07;
-          for (let i = 0; i < 6; i++) out[w++] = shade;
-        }
-      }
-    }
-  }
-  return out;
-}
-
-const speck = (x: number, y: number, z: number): PartSpec => ({
-  pos: [x, y, z],
-  size: [0.02, 0.02, 0.02],
-});
-
-const JAGUAR: AnimalSpec = {
-  name: "jaguar",
-  shadow: [1.9, 0.85],
-  // Cream cat with a plum chest, rust forelegs, olive haunches (ref: papercraft lioness)
-  colors: [
-    P.tan, // body
-    P.plum, // chest
-    P.goldenrod, // hips
-    P.cream, // head
-    P.cream, // snout
-    P.oat, // earL
-    P.oat, // earR
-    P.rust, // legFL
-    P.rust, // legFR
-    P.olive, // legBL
-    P.olive, // legBR
-    P.tan, // tail speck
-    P.terracotta, // tail root
-    P.terracotta, // tail mid
-    P.terracotta, // tail tip
-  ],
-  parts: [
-    { pos: [0, 0.64, 0], size: [1.45, 0.42, 0.44], taperBottom: 0.78 }, // body
-    { pos: [0.6, 0.6, 0], size: [0.52, 0.52, 0.5], taperBottom: 0.85 }, // chest
-    { pos: [-0.6, 0.66, 0], size: [0.5, 0.46, 0.46], taperTop: 0.84, rot: [0, 0, 0.08] }, // hips
-    { pos: [1.02, 0.92, 0], size: [0.34, 0.3, 0.32], taperTop: 0.86 }, // head
-    { pos: [1.21, 0.86, 0], size: [0.22, 0.17, 0.22], taperBottom: 0.8 }, // snout
-    { pos: [0.95, 1.12, 0.1], size: [0.09, 0.15, 0.06], rot: [0, 0, -0.1], taperTop: 0.25 }, // earL
-    { pos: [0.95, 1.12, -0.1], size: [0.09, 0.15, 0.06], rot: [0, 0, -0.1], taperTop: 0.25 }, // earR
-    { pos: [0.62, 0.26, 0.15], size: [0.15, 0.55, 0.14], taperBottom: 0.68 }, // legFL
-    { pos: [0.58, 0.26, -0.15], size: [0.15, 0.55, 0.14], taperBottom: 0.68 }, // legFR
-    { pos: [-0.62, 0.26, 0.16], size: [0.16, 0.55, 0.15], taperBottom: 0.68 }, // legBL
-    { pos: [-0.58, 0.26, -0.16], size: [0.16, 0.55, 0.15], taperBottom: 0.68 }, // legBR
-    speck(-0.85, 0.72, 0), // tail box folds away — chain is the tail
-    { pos: [-1.05, 0.78, 0], size: [0.1, 0.52, 0.1], rot: [0, 0, 1.35] }, // app1: tail sweeps back
-    { pos: [-1.45, 0.95, 0], size: [0.09, 0.44, 0.09], rot: [0, 0, 0.9] }, // app2
-    { pos: [-1.6, 1.22, 0], size: [0.085, 0.36, 0.085], rot: [0, 0, 0.3], taperTop: 0.3 }, // app3: tip curls up
-  ],
-};
-
-const RHINO: AnimalSpec = {
-  name: "rhino",
-  shadow: [2.1, 1.1],
-  // Mustard body, orange/red cape, teal neck, blush head, orange horns (ref: origami rhino)
-  colors: [
-    P.mustard, // body
-    P.teal, // chest / neck
-    P.terracotta, // hips
-    P.blush, // head
-    P.blush, // snout
-    P.oat, // earL
-    P.oat, // earR
-    P.terracotta, // legFL
-    P.mustard, // legFR
-    P.mustard, // legBL
-    P.terracotta, // legBR
-    P.terracotta, // tail
-    P.orange, // big horn
-    P.orange, // small horn
-    P.blush, // hidden
-  ],
-  parts: [
-    { pos: [0, 0.78, 0], size: [1.65, 0.85, 0.8], taperTop: 0.84 }, // body
-    { pos: [0.68, 0.75, 0], size: [0.78, 0.95, 0.86], taperTop: 0.88, taperBottom: 0.92 }, // chest
-    { pos: [-0.68, 0.8, 0], size: [0.7, 0.8, 0.76], taperTop: 0.76, rot: [0, 0, 0.12] }, // hips
-    { pos: [1.18, 0.68, 0], size: [0.52, 0.48, 0.44], rot: [0, 0, -0.12], taperBottom: 0.85 }, // head
-    { pos: [1.48, 0.54, 0], size: [0.3, 0.32, 0.34], taperBottom: 0.82 }, // snout
-    { pos: [1.08, 1.0, 0.16], size: [0.08, 0.17, 0.06], taperTop: 0.3 }, // earL
-    { pos: [1.08, 1.0, -0.16], size: [0.08, 0.17, 0.06], taperTop: 0.3 }, // earR
-    { pos: [0.62, 0.24, 0.25], size: [0.27, 0.48, 0.26], taperBottom: 0.78 }, // legFL
-    { pos: [0.58, 0.24, -0.25], size: [0.27, 0.48, 0.26], taperBottom: 0.78 }, // legFR
-    { pos: [-0.64, 0.24, 0.25], size: [0.27, 0.48, 0.26], taperBottom: 0.78 }, // legBL
-    { pos: [-0.6, 0.24, -0.25], size: [0.27, 0.48, 0.26], taperBottom: 0.78 }, // legBR
-    { pos: [-1.08, 0.62, 0], size: [0.06, 0.42, 0.06], rot: [0, 0, -0.18], taperBottom: 0.4 }, // tail
-    { pos: [1.62, 0.86, 0], size: [0.13, 0.34, 0.13], rot: [0, 0, -0.32], taperTop: 0.2 }, // app1: big horn
-    { pos: [1.42, 0.88, 0], size: [0.1, 0.2, 0.1], rot: [0, 0, -0.28], taperTop: 0.25 }, // app2: small horn
-    speck(1.45, 0.72, 0), // app3 folds away
-  ],
-};
-
-const ELEPHANT: AnimalSpec = {
-  name: "elephant",
-  shadow: [2.15, 1.2],
-  // Slate blues with rust/olive ears and a banded trunk (ref: low-poly elephant)
-  colors: [
-    P.slate, // body
-    P.slateDeep, // chest
-    P.slateLight, // hips
-    P.slate, // head
-    P.ink, // snout
-    P.rust, // earL
-    P.goldenrod, // earR
-    P.slateDeep, // legFL
-    P.slateLight, // legFR
-    P.slateLight, // legBL
-    P.slateDeep, // legBR
-    P.ink, // tail
-    P.slateDeep, // trunk root
-    P.terracotta, // trunk mid band
-    P.mustard, // trunk tip
-  ],
-  parts: [
-    { pos: [0, 0.95, 0], size: [1.5, 0.95, 0.9], taperTop: 0.88 }, // body
-    { pos: [0.55, 0.95, 0], size: [0.75, 1.0, 0.95], taperTop: 0.92 }, // chest
-    { pos: [-0.6, 0.97, 0], size: [0.72, 0.9, 0.85], taperTop: 0.78, rot: [0, 0, -0.08] }, // hips
-    { pos: [1.28, 1.42, 0], size: [0.58, 0.56, 0.52], taperBottom: 0.88 }, // head
-    { pos: [1.42, 1.14, 0], size: [0.22, 0.2, 0.26], taperBottom: 0.82 }, // snout / jaw
-    { pos: [1.12, 1.48, 0.4], size: [0.4, 0.58, 0.06], rot: [0, 0.45, 0.1], taperBottom: 0.7 }, // earL panel
-    { pos: [1.12, 1.48, -0.4], size: [0.4, 0.58, 0.06], rot: [0, -0.45, 0.1], taperBottom: 0.7 }, // earR panel
-    { pos: [0.58, 0.46, 0.28], size: [0.26, 0.92, 0.26], taperBottom: 0.82 }, // legFL
-    { pos: [0.54, 0.46, -0.28], size: [0.26, 0.92, 0.26], taperBottom: 0.82 }, // legFR
-    { pos: [-0.6, 0.46, 0.28], size: [0.26, 0.92, 0.26], taperBottom: 0.82 }, // legBL
-    { pos: [-0.56, 0.46, -0.28], size: [0.26, 0.92, 0.26], taperBottom: 0.82 }, // legBR
-    { pos: [-1.02, 0.98, 0], size: [0.05, 0.5, 0.05], rot: [0, 0, -0.12], taperBottom: 0.4 }, // tail
-    { pos: [1.56, 1.14, 0], size: [0.18, 0.54, 0.18], rot: [0, 0, -0.14] }, // app1: trunk root
-    { pos: [1.65, 0.7, 0], size: [0.15, 0.46, 0.15], rot: [0, 0, -0.02] }, // app2: trunk mid
-    { pos: [1.69, 0.38, 0], size: [0.13, 0.36, 0.13], rot: [0, 0, 0.3], taperBottom: 0.45 }, // app3: trunk tip curls
-  ],
-};
-
-const ANIMALS = [JAGUAR, RHINO, ELEPHANT];
-
-const HOLD_S = 4.6; // idle time per animal
-const MORPH_S = 1.7; // refold duration
+const HOLD_S = 4.8; // idle time per animal
+const FOLD_S = 1.05; // animal -> paper ball
+const UNFOLD_S = 1.25; // paper ball -> next animal
+const INTRO_S = 1.4; // first unfold on load
 
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+// Deterministic pseudo-random in [-1, 1]
+function rnd(a: number, b: number, salt: number): number {
+  const s = Math.sin(a * 127.1 + b * 311.7 + salt * 74.7) * 43758.5453;
+  return (s - Math.floor(s)) * 2 - 1;
 }
 
 export default function OrigamiHeroCanvas() {
@@ -423,6 +53,18 @@ export default function OrigamiHeroCanvas() {
     let raf = 0;
     let renderer: THREENS.WebGLRenderer | null = null;
     let cleanupResize: (() => void) | null = null;
+    const worker = new Worker(
+      new URL("./origami/mesh.worker.ts", import.meta.url),
+      { type: "module" }
+    );
+    const pending: SculptMesh[] = [];
+    let onMesh: ((index: number, m: SculptMesh) => void) | null = null;
+    worker.onmessage = (ev: MessageEvent<SculptMesh & { index: number }>) => {
+      const { index, ...m } = ev.data;
+      if (onMesh) onMesh(index, m);
+      else pending[index] = m;
+    };
+    worker.postMessage("build");
 
     loadThree()
       .then((THREE) => {
@@ -432,11 +74,10 @@ export default function OrigamiHeroCanvas() {
           "(prefers-reduced-motion: reduce)"
         ).matches;
 
-        renderer = new THREE.WebGLRenderer({
-          antialias: true,
-          alpha: true,
-        });
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setClearColor(0x000000, 0);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
         const scene = new THREE.Scene();
         const FOV = 34;
@@ -445,17 +86,30 @@ export default function OrigamiHeroCanvas() {
         camera.position.set(0, 1.5, 4.7);
         camera.lookAt(0, 0.05, 0);
 
-        // Paper lighting: bright warm sky/ground bounce + key for crisp facet shading.
-        // The key light drifts, so the faceted paper backdrop shimmers — slowly at
-        // rest, sweeping hard while the beast refolds.
-        const hemi = new THREE.HemisphereLight(0xfffdf8, 0xa8c4ba, 1.5);
+        // Paper lighting: soft warm sky/ground bounce, a shadow-casting key for
+        // crisp facets, a cool rim from behind to carve the silhouette.
+        const hemi = new THREE.HemisphereLight(0xfffdf8, 0x9dbcb1, 1.25);
         scene.add(hemi);
-        const key = new THREE.DirectionalLight(0xfffaf0, 1.7);
-        key.position.set(2.5, 4.5, 3);
+        const key = new THREE.DirectionalLight(0xfff6e8, 2.1);
+        key.castShadow = true;
+        key.shadow.mapSize.set(2048, 2048);
+        key.shadow.camera.left = -3;
+        key.shadow.camera.right = 3;
+        key.shadow.camera.top = 3;
+        key.shadow.camera.bottom = -3;
+        key.shadow.camera.near = 0.5;
+        key.shadow.camera.far = 20;
+        key.shadow.bias = -0.0004;
+        key.shadow.normalBias = 0.025;
+        key.shadow.radius = 4;
         scene.add(key);
-        const fill = new THREE.DirectionalLight(0xf0e6d4, 0.45);
+        scene.add(key.target);
+        const fill = new THREE.DirectionalLight(0xf0e6d4, 0.4);
         fill.position.set(-3, 1.5, -2);
         scene.add(fill);
+        const rim = new THREE.DirectionalLight(0xe6f4ff, 0.9);
+        rim.position.set(-2, 3, -4);
+        scene.add(rim);
 
         // Faceted origami-paper backdrop: a big plane with jittered vertices,
         // flat-shaded so every triangle catches the moving light differently
@@ -482,80 +136,67 @@ export default function OrigamiHeroCanvas() {
         backdrop.position.set(0, 1.5, -3.6);
         scene.add(backdrop);
 
-        const shapes = ANIMALS.map(buildShape);
-        const crumpleDirs = buildCrumpleDirs();
-
-        const positions = new Float32Array(shapes[0]);
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute(
-          "position",
-          new THREE.BufferAttribute(positions, 3)
-        );
-
-        // Colored-paper panels: each part carries its animal's palette color,
-        // crossfaded per-part while the beast refolds
-        const partColors = ANIMALS.map((a) =>
-          a.colors.map((hex) => new THREE.Color(hex).convertSRGBToLinear())
-        );
-        const colors = new Float32Array(VERT_COUNT * 3);
-        const shadeFactors = buildShadeFactors();
-        const fillPartColor = (part: number, c: THREENS.Color) => {
-          const start = part * VERTS_PER_PART;
-          for (let i = 0; i < VERTS_PER_PART; i++) {
-            const s = shadeFactors[start + i];
-            colors[(start + i) * 3] = Math.min(c.r * s, 1);
-            colors[(start + i) * 3 + 1] = Math.min(c.g * s, 1);
-            colors[(start + i) * 3 + 2] = Math.min(c.b * s, 1);
-          }
-        };
-        for (let p2 = 0; p2 < PART_COUNT; p2++) {
-          fillPartColor(p2, partColors[0][p2]);
-        }
-        geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-        geometry.computeVertexNormals();
-        geometry.computeBoundingSphere();
-
         const material = new THREE.MeshStandardMaterial({
           color: 0xffffff,
           vertexColors: true,
-          roughness: 0.92,
+          roughness: 0.88,
           metalness: 0,
           flatShading: true,
           side: THREE.DoubleSide,
         });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.frustumCulled = false;
+
+        const geometries: (THREENS.BufferGeometry | undefined)[] = [];
+        const toGeometry = (m: SculptMesh) => {
+          const g = new THREE.BufferGeometry();
+          g.setAttribute("position", new THREE.BufferAttribute(m.positions, 3));
+          g.setAttribute("color", new THREE.BufferAttribute(m.colors, 3));
+          g.morphAttributes.position = [new THREE.BufferAttribute(m.ball, 3)];
+          g.morphAttributes.color = [new THREE.BufferAttribute(m.ballColors, 3)];
+          g.computeBoundingSphere();
+          return g;
+        };
 
         const group = new THREE.Group();
-        group.add(mesh);
         group.scale.setScalar(0.75);
         group.position.y = -0.82; // center animal vertically in frame
         // Face -x (toward the intro text) with the head angled out at the viewer
         group.rotation.y = Math.PI + 0.55;
         scene.add(group);
 
-        // Soft blob shadow: radial-gradient canvas texture on a ground plane
+        let mesh: THREENS.Mesh | null = null;
+
+        // Contact shadow from the key light + a soft ambient blob underneath
+        const ground = new THREE.Mesh(
+          new THREE.PlaneGeometry(8, 8),
+          new THREE.ShadowMaterial({ color: 0x1f2a26, opacity: 0.2 })
+        );
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        group.add(ground);
+
         const shadowCanvas = document.createElement("canvas");
         shadowCanvas.width = shadowCanvas.height = 128;
         const ctx = shadowCanvas.getContext("2d")!;
         const grad = ctx.createRadialGradient(64, 64, 4, 64, 64, 64);
-        grad.addColorStop(0, "rgba(34, 31, 26, 0.34)");
-        grad.addColorStop(0.6, "rgba(34, 31, 26, 0.12)");
+        grad.addColorStop(0, "rgba(34, 31, 26, 0.26)");
+        grad.addColorStop(0.6, "rgba(34, 31, 26, 0.08)");
         grad.addColorStop(1, "rgba(34, 31, 26, 0)");
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 128, 128);
-        const shadowTex = new THREE.CanvasTexture(shadowCanvas);
-        const shadow = new THREE.Mesh(
+        const blob = new THREE.Mesh(
           new THREE.PlaneGeometry(2, 2),
           new THREE.MeshBasicMaterial({
-            map: shadowTex,
+            map: new THREE.CanvasTexture(shadowCanvas),
             transparent: true,
             depthWrite: false,
           })
         );
-        shadow.rotation.x = -Math.PI / 2;
-        shadow.position.y = 0.005;
-        group.add(shadow);
+        blob.rotation.x = -Math.PI / 2;
+        blob.position.y = 0.004;
+        group.add(blob);
+
+        const BALL_BLOB: [number, number] = [1.1, 1.1];
+        const setBlob = (s: [number, number]) => blob.scale.set(s[0], s[1], 1);
 
         const setCaption = (name: string) => {
           if (captionEl) captionEl.textContent = name;
@@ -564,18 +205,17 @@ export default function OrigamiHeroCanvas() {
           if (captionEl?.parentElement)
             captionEl.parentElement.style.opacity = String(o);
         };
-        setCaption(ANIMALS[0].name);
-
-        const setShadow = (a: number, b: number, t: number) => {
-          const sx =
-            ANIMALS[a].shadow[0] + (ANIMALS[b].shadow[0] - ANIMALS[a].shadow[0]) * t;
-          const sz =
-            ANIMALS[a].shadow[1] + (ANIMALS[b].shadow[1] - ANIMALS[a].shadow[1]) * t;
-          shadow.scale.set(sx, sz, 1);
-        };
-        setShadow(0, 0, 0);
 
         const proj = new THREE.Vector3();
+        const placeKey = (angle: number) => {
+          const gx = group.position.x;
+          key.target.position.set(gx, 0, 0);
+          key.position.set(
+            gx + 2.5 + Math.sin(angle) * 3.2,
+            4.8 + Math.cos(angle * 0.83) * 1.2,
+            3
+          );
+        };
         const resize = () => {
           if (!renderer) return;
           const rect = host.getBoundingClientRect();
@@ -597,6 +237,7 @@ export default function OrigamiHeroCanvas() {
           const halfW = TAN_HALF_FOV * dist * aspect;
           const gx = Math.max(0, Math.min(halfW * 0.34, halfW - 1.5));
           group.position.x = gx;
+          placeKey(lightT);
           // Anchor the caption just below the beast
           if (captionEl?.parentElement) {
             proj.set(gx, -1.12, 0).project(camera);
@@ -606,28 +247,63 @@ export default function OrigamiHeroCanvas() {
           renderer.render(scene, camera);
         };
 
+        let lightT = 0;
         host.appendChild(renderer.domElement);
         resize();
         const ro = new ResizeObserver(resize);
         ro.observe(host);
         cleanupResize = () => ro.disconnect();
 
-        if (reduceMotion) return; // static first animal, no cycling
-
-        // idle(HOLD_S) -> morph(MORPH_S) -> next animal
+        // State machine: intro (ball -> first animal), idle, fold, unfold
         let current = 0;
-        let phase: "idle" | "morph" = "idle";
+        let phase: "wait" | "intro" | "idle" | "fold" | "unfold" = "wait";
         let phaseStart = performance.now() / 1000;
         let lastNow = phaseStart;
-        let lightT = 0;
         const baseRotY = group.rotation.y;
-        const posAttr = geometry.getAttribute(
-          "position"
-        ) as THREENS.BufferAttribute;
-        const colorAttr = geometry.getAttribute(
-          "color"
-        ) as THREENS.BufferAttribute;
-        const tmpColor = new THREE.Color();
+        let spin = 0;
+
+        const setCrumple = (v: number) => {
+          if (mesh?.morphTargetInfluences) mesh.morphTargetInfluences[0] = v;
+        };
+        const showAnimal = (i: number) => {
+          const g = geometries[i];
+          if (!g) return;
+          if (!mesh) {
+            mesh = new THREE.Mesh(g, material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.frustumCulled = false;
+            group.add(mesh);
+          } else {
+            mesh.geometry = g;
+            mesh.updateMorphTargets();
+          }
+        };
+        const lerpBlob = (a: [number, number], b: [number, number], t: number) =>
+          setBlob([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+
+        const start = () => {
+          showAnimal(0);
+          setCaption(ANIMALS[0].name);
+          if (reduceMotion) {
+            setCrumple(0);
+            setBlob(ANIMALS[0].shadow);
+            renderer?.render(scene, camera);
+            return;
+          }
+          phase = "intro";
+          phaseStart = performance.now() / 1000;
+          setCrumple(1);
+          setCaptionOpacity(0);
+        };
+
+        onMesh = (i, m) => {
+          geometries[i] = toGeometry(m);
+          if (i === 0) start();
+        };
+        pending.forEach((m, i) => m && onMesh!(i, m));
+
+        if (reduceMotion) return; // static first animal, no cycling
 
         const animate = () => {
           if (disposed || !renderer) return;
@@ -637,60 +313,57 @@ export default function OrigamiHeroCanvas() {
           const dt = Math.min(now - lastNow, 0.1);
           lastNow = now;
 
-          // Light drifts lazily at rest, sweeps during a refold — the faceted
-          // backdrop and the beast both shimmer with it
-          lightT += dt * (phase === "morph" ? 2.6 : 0.22);
-          key.position.set(
-            2.5 + Math.sin(lightT) * 4.2,
-            4.5 + Math.cos(lightT * 0.83) * 1.7,
-            3
-          );
+          // Light drifts lazily at rest, sweeps during a refold
+          lightT += dt * (phase === "fold" || phase === "unfold" ? 1.6 : 0.2);
+          placeKey(lightT);
 
-          if (phase === "idle") {
-            group.rotation.y = baseRotY + Math.sin(now * 0.5) * 0.09;
-            group.position.y = -0.82 + Math.sin(now * 1.1) * 0.015;
-            if (t > HOLD_S) {
-              phase = "morph";
+          const next = (current + 1) % ANIMALS.length;
+          const bob = Math.sin(now * 1.1) * 0.012;
+
+          if (phase === "intro") {
+            const p = Math.min(t / INTRO_S, 1);
+            const e = easeInOutCubic(p);
+            setCrumple(1 - e);
+            lerpBlob(BALL_BLOB, ANIMALS[0].shadow, e);
+            group.rotation.y = baseRotY + (1 - e) * Math.PI;
+            if (p >= 1) {
+              phase = "idle";
               phaseStart = now;
+              setCaptionOpacity(1);
+            }
+          } else if (phase === "idle") {
+            group.rotation.y = baseRotY + Math.sin(now * 0.5) * 0.09;
+            group.position.y = -0.82 + bob;
+            if (t > HOLD_S && geometries[next]) {
+              phase = "fold";
+              phaseStart = now;
+              spin = 0;
               setCaptionOpacity(0);
             }
-          } else {
-            const next = (current + 1) % ANIMALS.length;
-            const p = Math.min(t / MORPH_S, 1);
+          } else if (phase === "fold") {
+            const p = Math.min(t / FOLD_S, 1);
             const e = easeInOutCubic(p);
-            const from = shapes[current];
-            const to = shapes[next];
-            // crumple hardest mid-refold, settling flat at both ends
-            const crumple = Math.sin(p * Math.PI) * 0.16;
-            // refold ripples through the parts instead of one uniform blend
-            const STAGGER = 0.3;
-            for (let part = 0; part < PART_COUNT; part++) {
-              const delay = (part / (PART_COUNT - 1)) * STAGGER;
-              const pp = Math.min(Math.max((p - delay) / (1 - STAGGER), 0), 1);
-              const ep = easeInOutCubic(pp);
-              const start = part * VERTS_PER_PART * 3;
-              const end = start + VERTS_PER_PART * 3;
-              for (let i = start; i < end; i++) {
-                positions[i] =
-                  from[i] + (to[i] - from[i]) * ep + crumpleDirs[i] * crumple;
-              }
-              // paper panel color crossfades with the same ripple
-              tmpColor
-                .copy(partColors[current][part])
-                .lerp(partColors[next][part], ep);
-              fillPartColor(part, tmpColor);
-            }
-            posAttr.needsUpdate = true;
-            colorAttr.needsUpdate = true;
-            geometry.computeVertexNormals();
-            // tumble a half-turn while refolding
-            group.rotation.y = baseRotY + e * Math.PI * 2;
-            setShadow(current, next, e);
-            if (p >= 0.5 && captionEl?.textContent !== ANIMALS[next].name) {
-              setCaption(ANIMALS[next].name);
-            }
+            setCrumple(e);
+            lerpBlob(ANIMALS[current].shadow, BALL_BLOB, e);
+            spin = e * Math.PI;
+            group.rotation.y = baseRotY + spin;
+            group.position.y = -0.82 + Math.sin(p * Math.PI) * 0.12;
             if (p >= 1) {
               current = next;
+              showAnimal(current);
+              setCrumple(1);
+              setCaption(ANIMALS[current].name);
+              phase = "unfold";
+              phaseStart = now;
+            }
+          } else if (phase === "unfold") {
+            const p = Math.min(t / UNFOLD_S, 1);
+            const e = easeInOutCubic(p);
+            setCrumple(1 - e);
+            lerpBlob(BALL_BLOB, ANIMALS[current].shadow, e);
+            group.rotation.y = baseRotY + Math.PI + e * Math.PI;
+            group.position.y = -0.82 + Math.sin(p * Math.PI) * 0.08;
+            if (p >= 1) {
               phase = "idle";
               phaseStart = now;
               setCaptionOpacity(1);
@@ -706,6 +379,7 @@ export default function OrigamiHeroCanvas() {
 
     return () => {
       disposed = true;
+      worker.terminate();
       cancelAnimationFrame(raf);
       cleanupResize?.();
       if (renderer) {
