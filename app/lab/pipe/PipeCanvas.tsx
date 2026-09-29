@@ -30,7 +30,8 @@ export type PipeControls = {
    frames are parallel-transported forward from there.
 
    Motion comes from the bands: they stream along the pipe,
-   away from the viewer, while the graticule slowly turns.
+   away from the viewer. The band colors are picked at random
+   on each load.
    New ends approach a far depth asymptotically, so the pipe
    keeps going "into infinity" without leaving the fog.
    ========================================================= */
@@ -45,20 +46,26 @@ const GROW_MIN = 28; // units per second the pipe grows into a new segment
 const BAND = 2.6;
 const WANDER_IDLE_S = 3.5;
 const FOG_COLOR = 0x0a1024;
-const COLOR_A = 0x1f4fd1; // flight-map blue
-const COLOR_B = 0xe9eef9; // paper white
+// Alternating band pairs; one is picked at random on each load / restart.
+const PALETTES: [number, number][] = [
+  [0x1f4fd1, 0xe9eef9], // flight-map blue / paper white
+  [0xf25c54, 0xffd6a5], // coral / peach
+  [0x2ec4b6, 0x1d5a86], // teal / deep sea
+  [0xffbe0b, 0x3a0ca3], // marigold / indigo
+  [0x8338ec, 0xff006e], // violet / magenta
+  [0x06d6a0, 0x118ab2], // mint / cerulean
+  [0xe63946, 0xf1faee], // signal red / white
+  [0xff9f1c, 0x2b2d42], // amber / graphite
+];
 
 const VERT = /* glsl */ `
   uniform float uSBase;
   attribute float aS;
-  attribute float aTheta;
   varying float vS;
-  varying float vTheta;
   varying vec3 vNormal;
   varying vec3 vView;
   void main() {
     vS = aS + uSBase;
-    vTheta = aTheta;
     vNormal = normalize(normalMatrix * normal);
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
     vView = mv.xyz;
@@ -70,32 +77,21 @@ const FRAG = /* glsl */ `
   uniform vec3 uA;
   uniform vec3 uB;
   uniform float uFlow;
-  uniform float uTwist;
   uniform float uBand;
   uniform vec3 uFog;
   uniform float uFogNear;
   uniform float uFogFar;
   varying float vS;
-  varying float vTheta;
   varying vec3 vNormal;
   varying vec3 vView;
 
-  float gridLine(float x, float width) {
-    float d = abs(fract(x - 0.5) - 0.5);
-    float w = fwidth(x) * width;
-    return 1.0 - smoothstep(w * 0.5, w * 1.5, d);
-  }
-
   void main() {
-    // bands (and ring lines) stream away from the viewer
+    // bands stream away from the viewer
     float s = vS - uFlow;
     float band = mod(floor(s / uBand), 2.0);
     vec3 base = mix(uA, uB, band);
 
     float depth = -vView.z;
-    float rings = gridLine(s / (uBand * 0.5), 1.2);
-    float meridians = gridLine(vTheta * 24.0 + uTwist, 1.2);
-    float grid = max(rings, meridians) * (1.0 - smoothstep(25.0, 90.0, depth));
 
     vec3 n = normalize(vNormal);
     vec3 v = normalize(-vView);
@@ -105,7 +101,6 @@ const FRAG = /* glsl */ `
     float rim = pow(1.0 - max(dot(n, v), 0.0), 2.5);
 
     vec3 col = base * diff;
-    col = mix(col, vec3(1.0), grid * 0.35);
     col += rim * 0.22 * mix(uB, uA, band);
 
     float fog = smoothstep(uFogNear, uFogFar, depth);
@@ -183,7 +178,6 @@ export default function PipeCanvas({
         let positions = new Float32Array(0);
         let normals = new Float32Array(0);
         let sAttr = new Float32Array(0);
-        let theta = new Float32Array(0);
         const geo = new THREE.BufferGeometry();
 
         const ensureCapacity = () => {
@@ -197,9 +191,6 @@ export default function PipeCanvas({
           positions = grow(positions, 3);
           normals = grow(normals, 3);
           sAttr = grow(sAttr, 1);
-          theta = grow(theta, 1);
-          for (let r = capacity; r < cap; r++)
-            for (let j = 0; j <= RADIAL; j++) theta[r * vertsPerRing + j] = j / RADIAL;
           const index: number[] = [];
           for (let r = 0; r < cap - 1; r++)
             for (let j = 0; j < RADIAL; j++) {
@@ -211,7 +202,6 @@ export default function PipeCanvas({
           geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
           geo.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
           geo.setAttribute("aS", new THREE.BufferAttribute(sAttr, 1));
-          geo.setAttribute("aTheta", new THREE.BufferAttribute(theta, 1));
           capacity = cap;
         };
 
@@ -300,10 +290,9 @@ export default function PipeCanvas({
         };
 
         const shared = {
-          uA: { value: new THREE.Color(COLOR_A) },
-          uB: { value: new THREE.Color(COLOR_B) },
+          uA: { value: new THREE.Color() },
+          uB: { value: new THREE.Color() },
           uFlow: { value: 0 },
-          uTwist: { value: 0 },
           uBand: { value: BAND },
           uFog: { value: new THREE.Color(FOG_COLOR) },
           uFogNear: { value: 55 },
@@ -324,7 +313,7 @@ export default function PipeCanvas({
         // Rounded cap riding the growing tip, in local frame (x = n, y = b, z = t)
         const capGeo = new THREE.BufferGeometry();
         {
-          const pos: number[] = [], nrm: number[] = [], sv: number[] = [], th: number[] = [], idx: number[] = [];
+          const pos: number[] = [], nrm: number[] = [], sv: number[] = [], idx: number[] = [];
           for (let k = 0; k <= CAP_RINGS; k++) {
             const phi = (k / CAP_RINGS) * (Math.PI / 2);
             const r = Math.cos(phi) * RADIUS;
@@ -334,7 +323,6 @@ export default function PipeCanvas({
               pos.push(Math.cos(a) * r, Math.sin(a) * r, h);
               nrm.push(Math.cos(a) * Math.cos(phi), Math.sin(a) * Math.cos(phi), Math.sin(phi));
               sv.push(h);
-              th.push(j / RADIAL);
             }
           }
           for (let k = 0; k < CAP_RINGS; k++)
@@ -347,7 +335,6 @@ export default function PipeCanvas({
           capGeo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
           capGeo.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3));
           capGeo.setAttribute("aS", new THREE.Float32BufferAttribute(sv, 1));
-          capGeo.setAttribute("aTheta", new THREE.Float32BufferAttribute(th, 1));
         }
         const capMat = makeMat();
         const cap = new THREE.Mesh(capGeo, capMat);
@@ -386,6 +373,9 @@ export default function PipeCanvas({
           appendSegment(pointAt(0.08, 0.1, 40));
           revealS = ss[ss.length - 1];
           shared.uFlow.value = 0;
+          const [a, b] = PALETTES[Math.floor(Math.random() * PALETTES.length)];
+          shared.uA.value.set(a);
+          shared.uB.value.set(b);
         };
 
         // ---------- input ----------
@@ -467,7 +457,6 @@ export default function PipeCanvas({
           }
           const flow = reduceMotion ? Math.min(c.speed, 2) : c.speed;
           shared.uFlow.value += flow * dt;
-          if (!reduceMotion) shared.uTwist.value += dt * 0.12;
 
           // draw only the grown part; the cap sits on the tip
           const tipF = revealS / SAMPLE;
