@@ -9,6 +9,13 @@ export const metadata = {
 
 const experiments = [
   {
+    slug: "relief",
+    title: "Relief",
+    summary:
+      "Raised-relief maps of continents, countries and mountain ranges from real elevation data. Dial the vertical exaggeration from true scale to 300× and move the sun.",
+    tag: "data · webgl",
+  },
+  {
     slug: "pipe",
     title: "Endless pipe",
     summary:
