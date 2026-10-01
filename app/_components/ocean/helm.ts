@@ -12,3 +12,16 @@ export const helm = {
 
 export const DISTANCE_MIN = 0.62; // any closer and she sails over the hero text
 export const DISTANCE_MAX = 3.2;
+
+/** Current time-of-day label for the hero ("7:42 pm · dusk"), with a tiny subscription. */
+const listeners = new Set<() => void>();
+export const sky = {
+  label: "",
+  notify: () => listeners.forEach((l) => l()),
+  subscribe: (l: () => void) => {
+    listeners.add(l);
+    return () => {
+      listeners.delete(l);
+    };
+  },
+};

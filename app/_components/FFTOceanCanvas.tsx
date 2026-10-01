@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type * as THREENS from "three";
+import type { SkyState } from "./ocean/sky";
 
 /**
  * Tessendorf FFT ocean — ported from david.li/waves to Three.js.
@@ -282,22 +283,36 @@ const oceanVS = /* glsl */ `
 `;
 
 // Ocean fragment: fresnel + diffuse + HDR tone-map (lifted from david.li)
-// Dusk sky shared by the voyage sky dome and the water's reflections, so the
-// horizon line matches exactly. d = view direction, S = sun direction.
+// Time-of-day sky shared by the voyage sky dome and the water's reflections,
+// so the horizon line matches exactly. Colors come from ocean/sky.ts.
+// d = view direction, S = direction to the sun (or moon).
 export const DUSK_SKY = /* glsl */ `
+  uniform vec3 uZenith;
+  uniform vec3 uBand;
+  uniform vec3 uHorizon;
+  uniform vec3 uGlow;
+  uniform vec3 uDisc;
+  uniform float uDiscSize;
+  uniform float uStars;
   vec3 duskSky(vec3 d, vec3 S) {
     float e = max(d.y, 0.0);
     float t = pow(e, 0.35);
-    vec3 horizon = vec3(1.15, 0.5, 0.26);  // ember orange at the waterline
-    vec3 band = vec3(0.17, 0.12, 0.3);     // indigo-violet afterglow
-    vec3 zenith = vec3(0.03, 0.04, 0.12);  // deep indigo overhead
-    vec3 c = mix(horizon, band, smoothstep(0.0, 0.55, t));
-    c = mix(c, zenith, smoothstep(0.5, 1.0, t));
-    // the glow is warmer and wider toward the sun
+    vec3 c = mix(uHorizon, uBand, smoothstep(0.0, 0.55, t));
+    c = mix(c, uZenith, smoothstep(0.5, 1.0, t));
     float s = max(dot(d, S), 0.0);
-    c += vec3(1.4, 0.62, 0.25) * pow(s, 14.0) * 0.8 * (1.0 - t * 0.6);
-    c += vec3(3.2, 1.9, 1.0) * pow(s, 2400.0) * 7.0; // sun disc
+    c += uGlow * pow(s, 14.0) * (1.0 - t * 0.6);
+    c += uDisc * pow(s, uDiscSize);
     return c;
+  }
+  // stars only in the dome (not reflected), so they don't sparkle on the water
+  vec3 starfield(vec3 d) {
+    if (uStars <= 0.0 || d.y <= 0.02) return vec3(0.0);
+    vec3 q = d * 260.0;
+    vec3 cell = floor(q);
+    float h = fract(sin(dot(cell, vec3(127.1, 311.7, 74.7))) * 43758.5453);
+    vec3 f = fract(q) - 0.5;
+    float star = smoothstep(0.08, 0.0, length(f)) * step(0.985, h);
+    return vec3(0.9, 0.95, 1.0) * star * uStars * smoothstep(0.02, 0.2, d.y) * (0.5 + 2.0 * fract(h * 97.0));
   }
   vec3 duskTone(vec3 c) { return 1.0 - exp(-c * 1.15); }
 `;
@@ -324,6 +339,9 @@ const oceanFS = /* glsl */ `
   }
 
   ${DUSK_SKY}
+  uniform vec3 uDeep;
+  uniform vec3 uCrest;
+  uniform vec3 uFoam;
 
   // Voyage at dusk: deep water mirrors the sunset sky; a glitter path runs to the sun
   vec4 shadeDusk(vec3 N, vec3 V) {
@@ -335,16 +353,15 @@ const oceanFS = /* glsl */ `
     vec3 refl = duskSky(R, S);
     // body color: dark sea, a little teal light through thin crests
     float h = v_position.y;
-    vec3 deep = vec3(0.0, 0.03, 0.065);
-    vec3 body = deep * (0.35 + 0.65 * max(dot(N, S), 0.0))
-              + vec3(0.0, 0.09, 0.1) * smoothstep(0.0, 3.0, h) * (1.0 - fres);
+    vec3 body = uDeep * (0.35 + 0.65 * max(dot(N, S), 0.0))
+              + uCrest * smoothstep(0.0, 3.0, h) * (1.0 - fres);
     vec3 color = mix(body, refl, fres);
     // breaking crests catch the last light
     float steep = 1.0 - N.y;
     float foam = smoothstep(0.42, 0.68, steep) * smoothstep(1.6, 3.2, h);
     float dist = length(u_cameraPosition.xz - v_position.xz);
     foam *= 1.0 - smoothstep(250.0, 900.0, dist);
-    color = mix(color, vec3(0.75, 0.62, 0.58), clamp(foam, 0.0, 0.85));
+    color = mix(color, uFoam, clamp(foam, 0.0, 0.85));
     // haze into the sky dome's horizon color at this bearing
     vec3 toward = normalize(vec3(-V.x, 0.0, -V.z));
     float fog = smoothstep(u_fogNear, u_fogFar, dist);
@@ -397,6 +414,8 @@ export type OceanSceneHook = (ctx: {
   setWind: (x: number, z: number) => void;
   /** Water surface height (m) at world (x, z) for the current frame. */
   sampleHeight: (x: number, z: number) => number;
+  /** Repaint sky and water for a time of day (see ocean/sky.ts). */
+  setSky: (sky: SkyState) => void;
 }) => { tick: (t: number, dt: number) => void; dispose: () => void };
 
 /** Maps between world space (y up, patch centered at the origin) and canvas pixels. */
@@ -708,6 +727,19 @@ export default function FFTOceanCanvas({
         oceanGeom.rotateX(-Math.PI / 2);
       }
 
+      // Time-of-day colors, shared by the water and the sky dome (voyage only)
+      const skyUniforms = {
+        uZenith: { value: new THREE.Vector3() },
+        uBand: { value: new THREE.Vector3() },
+        uHorizon: { value: new THREE.Vector3() },
+        uGlow: { value: new THREE.Vector3() },
+        uDisc: { value: new THREE.Vector3() },
+        uDiscSize: { value: 2400 },
+        uStars: { value: 0 },
+        uDeep: { value: new THREE.Vector3() },
+        uCrest: { value: new THREE.Vector3() },
+        uFoam: { value: new THREE.Vector3() },
+      };
       const oceanMat = new THREE.ShaderMaterial({
         vertexShader: oceanVS,
         fragmentShader: oceanFS,
@@ -735,6 +767,7 @@ export default function FFTOceanCanvas({
           u_fogNear: { value: voyage ? 1100 : 1e6 },
           u_fogFar: { value: voyage ? 3800 : 2e6 },
           u_depth: { value: voyage ? 1 : 0 },
+          ...skyUniforms,
         },
         transparent,
       });
@@ -766,7 +799,7 @@ export default function FFTOceanCanvas({
         const skyMat = new THREE.ShaderMaterial({
           side: THREE.BackSide,
           depthWrite: false,
-          uniforms: { u_sun: { value: oceanMat.uniforms.u_sunDirection.value } },
+          uniforms: { u_sun: { value: oceanMat.uniforms.u_sunDirection.value }, ...skyUniforms },
           vertexShader: /* glsl */ `
             varying vec3 vDir;
             void main() {
@@ -779,7 +812,10 @@ export default function FFTOceanCanvas({
             uniform vec3 u_sun;
             varying vec3 vDir;
             ${DUSK_SKY}
-            void main() { gl_FragColor = vec4(duskTone(duskSky(normalize(vDir), normalize(u_sun))), 1.0); }
+            void main() {
+              vec3 d = normalize(vDir);
+              gl_FragColor = vec4(duskTone(duskSky(d, normalize(u_sun)) + starfield(d)), 1.0);
+            }
           `,
         });
         const skyDome = new THREE.Mesh(new THREE.SphereGeometry(8000, 48, 24), skyMat);
@@ -798,6 +834,20 @@ export default function FFTOceanCanvas({
               paramsRef.current = { ...paramsRef.current, windX: x, windZ: z };
             },
             sampleHeight,
+            setSky: (k) => {
+              const u = skyUniforms;
+              u.uZenith.value.fromArray(k.zenith);
+              u.uBand.value.fromArray(k.band);
+              u.uHorizon.value.fromArray(k.horizon);
+              u.uGlow.value.fromArray(k.glow);
+              u.uDisc.value.fromArray(k.disc);
+              u.uDiscSize.value = k.discSize;
+              u.uStars.value = k.stars;
+              u.uDeep.value.fromArray(k.deep);
+              u.uCrest.value.fromArray(k.crest);
+              u.uFoam.value.fromArray(k.foam);
+              (oceanMat.uniforms.u_sunDirection.value as THREENS.Vector3).fromArray(k.lightDir).normalize();
+            },
           }) ?? null;
       }
 

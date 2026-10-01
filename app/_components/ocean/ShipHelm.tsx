@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useThemeId } from "../useThemeId";
-import { DISTANCE_MAX, DISTANCE_MIN, helm } from "./helm";
+import { DISTANCE_MAX, DISTANCE_MIN, helm, sky } from "./helm";
 
 /* The hero slot in the ocean theme: marks where the ship sits and turns drags
    into steering. Left/right turns the ship through 360°, up sends her farther
@@ -11,6 +11,7 @@ export default function ShipHelm() {
   const theme = useThemeId();
   const ref = useRef<HTMLDivElement>(null);
   const last = useRef<{ x: number; y: number } | null>(null);
+  const skyLabel = useSyncExternalStore(sky.subscribe, () => sky.label, () => "");
 
   useEffect(() => {
     const el = ref.current;
@@ -64,7 +65,10 @@ export default function ShipHelm() {
         e.preventDefault();
       }}
     >
-      <span className="ship-helm__hint">drag to steer · up / down to sail out or in</span>
+      <span className="ship-helm__hint">
+        {skyLabel && <span className="ship-helm__time">{skyLabel}</span>}
+        drag to steer · up / down to sail out or in
+      </span>
     </div>
   );
 }

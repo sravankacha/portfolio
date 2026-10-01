@@ -405,12 +405,21 @@ a:hover {
 }
 .ship-helm:active { cursor: grabbing; }
 .ship-helm:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.ship-helm__time {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
 .ship-helm__hint {
   position: absolute;
   left: 50%;
   bottom: 2%;
   transform: translateX(-50%);
   white-space: nowrap;
+  text-align: center;
   font-family: var(--font-jetbrains), ui-monospace, monospace;
   font-size: 11px;
   letter-spacing: 0.06em;
@@ -561,12 +570,12 @@ a:hover {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(3, 8, 20, 0.62) 0%, rgba(3, 8, 20, 0.42) 38%, rgba(3, 8, 20, 0.08) 62%, rgba(3, 8, 20, 0) 75%),
-    linear-gradient(180deg, rgba(3, 8, 20, 0) 55%, rgba(3, 8, 20, 0.45) 100%);
+    linear-gradient(90deg, rgba(3, 8, 20, calc(var(--sky-scrim, 0.45) * 1.4)) 0%, rgba(3, 8, 20, var(--sky-scrim, 0.45)) 38%, rgba(3, 8, 20, calc(var(--sky-scrim, 0.45) * 0.2)) 62%, rgba(3, 8, 20, 0) 75%),
+    linear-gradient(180deg, rgba(3, 8, 20, 0) 55%, rgba(3, 8, 20, var(--sky-scrim, 0.45)) 100%);
 }
 @media (max-width: 768px) {
   [data-theme="ocean"] .ocean-canvas::after {
-    background: linear-gradient(180deg, rgba(3, 8, 20, 0.1) 0%, rgba(3, 8, 20, 0.55) 45%, rgba(3, 8, 20, 0.7) 100%);
+    background: linear-gradient(180deg, rgba(3, 8, 20, 0.1) 0%, rgba(3, 8, 20, calc(var(--sky-scrim, 0.45) + 0.1)) 45%, rgba(3, 8, 20, calc(var(--sky-scrim, 0.45) + 0.25)) 100%);
   }
 }
 .ocean-canvas-host {
