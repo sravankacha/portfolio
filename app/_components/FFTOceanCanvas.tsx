@@ -293,6 +293,7 @@ const oceanFS = /* glsl */ `
   uniform vec3 u_fogColor;
   uniform float u_fogNear;
   uniform float u_fogFar;
+  uniform float u_depth; // 0 = david.li shading; 1 = voyage: deeper color, crest glow, whitecaps
 
   varying vec3 v_position;
   varying vec2 v_coordinates;
@@ -311,6 +312,20 @@ const oceanFS = /* glsl */ `
     vec3 water = (1.0 - fresnel) * u_oceanColor * u_skyColor * diffuse;
     vec3 color = sky + water;
     vec3 outColor = hdr(color, u_exposure);
+    if (u_depth > 0.0) {
+      float h = v_position.y;
+      // deep water darkens toward ink-navy; light through thin crests glows turquoise
+      vec3 deep = vec3(0.01, 0.06, 0.13);
+      outColor = mix(deep, outColor, 0.55 + 0.45 * fresnel);
+      float crest = smoothstep(0.0, 3.5, h) * (1.0 - fresnel);
+      outColor += vec3(0.02, 0.22, 0.24) * crest * (0.4 + 0.6 * diffuse);
+      // whitecaps: only crests that are both high and steep break into foam (fade with distance)
+      float steep = 1.0 - normal.y;
+      float foam = smoothstep(0.42, 0.68, steep) * smoothstep(1.6, 3.2, h)
+                 + smoothstep(3.6, 5.0, h) * 0.35;
+      foam *= 1.0 - smoothstep(250.0, 900.0, length(u_cameraPosition.xz - v_position.xz));
+      outColor = mix(outColor, vec3(0.93, 0.97, 1.0), clamp(foam, 0.0, 0.9));
+    }
     // haze toward the horizon so the mesh edge melts into the sky
     float fog = smoothstep(u_fogNear, u_fogFar, length(u_cameraPosition.xz - v_position.xz));
     gl_FragColor = vec4(mix(outColor, u_fogColor, fog), u_alpha);
@@ -340,6 +355,8 @@ export type OceanSceneHook = (ctx: {
   camera: THREENS.PerspectiveCamera;
   renderer: THREENS.WebGLRenderer;
   setWind: (x: number, z: number) => void;
+  /** Water surface height (m) at world (x, z) for the current frame. */
+  sampleHeight: (x: number, z: number) => number;
 }) => { tick: (t: number, dt: number) => void; dispose: () => void };
 
 /** Maps between world space (y up, patch centered at the origin) and canvas pixels. */
@@ -621,7 +638,7 @@ export default function FFTOceanCanvas({
           u_cameraPosition: { value: new THREE.Vector3() },
           u_oceanColor: { value: new THREE.Color(0.004, 0.016, 0.047) },
           // a low camera sees mostly grazing reflections; voyage dims the sky so they don't blow out
-          u_skyColor: { value: voyage ? new THREE.Color(1.5, 2.9, 4.1) : new THREE.Color(3.2, 9.6, 12.8) },
+          u_skyColor: { value: voyage ? new THREE.Color(1.6, 3.4, 5.2) : new THREE.Color(3.2, 9.6, 12.8) },
           u_sunDirection: {
             value: new THREE.Vector3(-1.0, 1.0, 1.0).normalize(),
           },
@@ -630,11 +647,29 @@ export default function FFTOceanCanvas({
           u_fogColor: { value: new THREE.Color(0xdbe9f1) },
           u_fogNear: { value: voyage ? 450 : 1e6 },
           u_fogFar: { value: voyage ? 1900 : 2e6 },
+          u_depth: { value: voyage ? 1 : 0 },
         },
         transparent,
       });
       const oceanMesh = new THREE.Mesh(oceanGeom, oceanMat);
       scene.add(oceanMesh);
+
+      // Read the simulated height under a world point straight from the displacement
+      // target (one texel; cheap enough for a handful of probes per frame).
+      const probe = new Uint16Array(4);
+      const tiling = voyage ? geometrySize / paramsRef.current.size : 1;
+      const sampleHeight = (x: number, z: number) => {
+        const u = ((x + geometrySize / 2) / geometrySize) * tiling;
+        const v = ((-z + geometrySize / 2) / geometrySize) * tiling;
+        const tx = Math.floor((u - Math.floor(u)) * RESOLUTION);
+        const ty = Math.floor((v - Math.floor(v)) * RESOLUTION);
+        try {
+          renderer.readRenderTargetPixels(displacementRT, tx, ty, 1, 1, probe);
+        } catch {
+          return 0;
+        }
+        return THREE.DataUtils.fromHalfFloat(probe[1]) * (geometrySize / paramsRef.current.size / tiling);
+      };
 
       // Voyage: daylight sky and whatever the caller sails on the water
       let hook: ReturnType<OceanSceneHook> | null = null;
@@ -661,6 +696,7 @@ export default function FFTOceanCanvas({
             setWind: (x, z) => {
               paramsRef.current = { ...paramsRef.current, windX: x, windZ: z };
             },
+            sampleHeight,
           }) ?? null;
       }
 

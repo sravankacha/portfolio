@@ -22,6 +22,14 @@ export type Ship = {
 const L = 36; // overall hull length
 const DECK = 2.0; // main deck height above the waterline
 
+/** Half-beam (m) at fraction u of the length, stern (0) to bow (1). */
+function halfBeam(u: number) {
+  const bow = Math.pow(Math.max(0, (u - 0.42) / 0.58), 2.1);
+  const stern = u < 0.1 ? 0.84 + 0.16 * (u / 0.1) : 1;
+  return 5.0 * (1 - bow) * stern;
+}
+export const SHIP_HULL = { length: L, halfBeam };
+
 export function buildShip(THREE: typeof THREENS): Ship {
   const root = new THREE.Group();
   const body = new THREE.Group(); // bobs and rolls inside root
@@ -35,11 +43,6 @@ export function buildShip(THREE: typeof THREENS): Ship {
   const glow = track(new THREE.MeshStandardMaterial({ color: 0xffd27a, emissive: 0xffb347, emissiveIntensity: 1.6 }));
 
   // ---------- hull ----------
-  const halfBeam = (u: number) => {
-    const bow = Math.pow(Math.max(0, (u - 0.42) / 0.58), 2.1);
-    const stern = u < 0.1 ? 0.84 + 0.16 * (u / 0.1) : 1;
-    return 5.0 * (1 - bow) * stern;
-  };
   const keel = (u: number) => 3.1 * (1 - 0.55 * Math.pow(Math.max(0, (u - 0.78) / 0.22), 2));
   const sheer = (u: number) =>
     3.0 + 3.4 * Math.pow(Math.max(0, 0.24 - u) / 0.24, 1.4) + 1.5 * Math.pow(Math.max(0, u - 0.82) / 0.18, 2);
@@ -382,10 +385,9 @@ export function buildShip(THREE: typeof THREENS): Ship {
   });
 
   const update = (t: number) => {
-    // swell: bob, roll and pitch on a few incommensurate periods
-    body.position.y = 0.45 * Math.sin(t * 0.8) + 0.25 * Math.sin(t * 1.37 + 1.1) - 1.1; // ride low: the hull is heavy
-    body.rotation.x = 0.05 * Math.sin(t * 0.9) + 0.02 * Math.sin(t * 1.7);
-    body.rotation.z = 0.025 * Math.sin(t * 0.7 + 0.5);
+    // the root floats on the simulated sea; this only adds a little settle and sway
+    body.position.y = -0.55 + 0.06 * Math.sin(t * 1.9);
+    body.rotation.x = 0.012 * Math.sin(t * 1.3);
     sailUniforms.uTime.value = t;
     // wave: big swing at the shoulder, smaller counter-swing at the elbow
     // arm raised and out to the side, swinging; the forearm lags for a natural wave

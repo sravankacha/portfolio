@@ -5,7 +5,8 @@ import { useCallback } from "react";
 import type { OceanSceneHook } from "../FFTOceanCanvas";
 import { useThemeId } from "../useThemeId";
 import { helm } from "./helm";
-import { buildShip } from "./ship";
+import { buildShip, SHIP_HULL } from "./ship";
+import { buildSplash } from "./splash";
 
 const FFTOceanCanvas = dynamic(() => import("../FFTOceanCanvas"), { ssr: false });
 
@@ -17,7 +18,7 @@ const WIND_SPEED = 14; // m/s
 export default function OceanVoyage() {
   const theme = useThemeId();
 
-  const sceneHook = useCallback<OceanSceneHook>(({ THREE, scene, camera, setWind }) => {
+  const sceneHook = useCallback<OceanSceneHook>(({ THREE, scene, camera, setWind, sampleHeight }) => {
     const hemi = new THREE.HemisphereLight(0xdcecff, 0x23384a, 1.3);
     const sun = new THREE.DirectionalLight(0xfff1dc, 2.4);
     sun.position.set(-300, 300, 300); // matches the ocean shader's sun
@@ -25,6 +26,12 @@ export default function OceanVoyage() {
 
     const ship = buildShip(THREE);
     scene.add(ship.root);
+    const splash = buildSplash(THREE, SHIP_HULL);
+    scene.add(...splash.objects);
+    // buoyancy state (smoothed so a 36 m hull has some inertia)
+    const float = { y: 0, pitch: 0, roll: 0, bowRel: 0, lastHeading: helm.heading };
+    const HALF_L = SHIP_HULL.length * 0.4;
+    const HALF_B = 4.4;
 
     const ray = new THREE.Raycaster();
     const ndc = new THREE.Vector2();
@@ -51,7 +58,28 @@ export default function OceanVoyage() {
         } else {
           ship.root.visible = false;
         }
-        ship.root.rotation.y = -heading;
+        // float on the simulated sea: probe bow, stern and both beams
+        const px = ship.root.position.x, pz = ship.root.position.z;
+        const fx = Math.cos(heading), fz = Math.sin(heading); // forward
+        const sx = -fz, sz = fx; // port
+        const hBow = sampleHeight(px + fx * HALF_L, pz + fz * HALF_L);
+        const hStern = sampleHeight(px - fx * HALF_L, pz - fz * HALF_L);
+        const hPort = sampleHeight(px + sx * HALF_B, pz + sz * HALF_B);
+        const hStar = sampleHeight(px - sx * HALF_B, pz - sz * HALF_B);
+        const water = (hBow + hStern + hPort + hStar) / 4;
+        const k = 1 - Math.exp(-dt * 5);
+        float.y += (water - float.y) * k;
+        float.pitch += (Math.atan2(hBow - hStern, HALF_L * 2) * 0.75 - float.pitch) * k;
+        float.roll += (-Math.atan2(hPort - hStar, HALF_B * 2) * 0.6 - float.roll) * k;
+        ship.root.position.y = float.y;
+        ship.root.rotation.set(float.roll, -heading, float.pitch, "YXZ");
+        // spray: water rising past the bow faster than the bow rises = a slam
+        const bowRel = hBow - (float.y + Math.sin(float.pitch) * HALF_L);
+        const slam = dt > 0 ? Math.min(1, Math.max(0, (bowRel - float.bowRel) / dt / 2.5)) : 0;
+        float.bowRel = bowRel;
+        const turn = dt > 0 ? Math.min(1, Math.abs(heading - float.lastHeading) / dt / 0.6) : 0;
+        float.lastHeading = heading;
+        if (ship.root.visible && dt < 0.2) splash.update(dt, ship.root, { slam, turn, water });
         // wind follows the bow; only re-seed the spectrum when it really changes
         if (Math.abs(heading - lastWind) > 0.02) {
           lastWind = heading;
@@ -60,8 +88,9 @@ export default function OceanVoyage() {
         ship.update(t, dt);
       },
       dispose: () => {
-        scene.remove(ship.root, hemi, sun);
+        scene.remove(ship.root, hemi, sun, ...splash.objects);
         ship.dispose();
+        splash.dispose();
       },
     };
   }, []);

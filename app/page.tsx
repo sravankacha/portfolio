@@ -106,7 +106,7 @@ export default function Home() {
           </Link>
         </div>
         <ul className="grid sm:grid-cols-2 gap-5">
-          {LAB.map((x) => (
+          {LAB.map((x, i) => (
             <li key={x.slug}>
               <Link
                 href={x.href ?? `/lab/${x.slug}`}
@@ -118,6 +118,7 @@ export default function Home() {
                     alt=""
                     fill
                     sizes="(min-width: 640px) 480px, 100vw"
+                    loading={i < 2 ? "eager" : "lazy"}
                     className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                   />
                 </div>
