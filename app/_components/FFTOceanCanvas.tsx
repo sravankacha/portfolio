@@ -27,7 +27,6 @@ async function loadThree(): Promise<typeof THREENS> {
 
 // Tuning knobs (mirror david.li's defaults)
 const RESOLUTION = 256;           // FFT grid (david uses 512; 256 keeps perf high)
-const LOG2_RESOLUTION = Math.log2(RESOLUTION);
 const GEOMETRY_RESOLUTION = 256;  // mesh subdivision
 const GEOMETRY_SIZE = 4000;        // mesh side length in world units
 const PATCH_SIZE = 250;            // FFT patch size in world units
