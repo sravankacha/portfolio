@@ -325,16 +325,37 @@ const DEFAULTS: FFTParams = {
   choppiness: 2.3,
 };
 
+/** Maps between world space (y up, patch centered at the origin) and canvas pixels. */
+export type OceanView = {
+  width: number;
+  height: number;
+  project: (x: number, y: number, z: number) => [number, number];
+  /** Pixel to the point on the y=0 plane under it, or null if it misses. */
+  ground: (px: number, py: number) => [number, number] | null;
+};
+
 export default function FFTOceanCanvas({
   params,
   transparent = false,
+  variant = "backdrop",
+  onView,
 }: {
   params?: Partial<FFTParams>;
   transparent?: boolean;
+  /** backdrop: endless sea filling the screen. specimen: one patch floating on the page. */
+  variant?: "backdrop" | "specimen";
+  onView?: (view: OceanView) => void;
 }) {
+  const specimen = variant === "specimen";
+  const onViewRef = useRef(onView);
+  useEffect(() => {
+    onViewRef.current = onView;
+  });
   const containerRef = useRef<HTMLDivElement>(null);
   const paramsRef = useRef<FFTParams>({ ...DEFAULTS, ...params });
-  paramsRef.current = { ...DEFAULTS, ...params };
+  useEffect(() => {
+    paramsRef.current = { ...DEFAULTS, ...params };
+  }, [params]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -386,7 +407,7 @@ export default function FFTOceanCanvas({
 
       // -- Scene --
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(60, 1, 1, 12000);
+      const camera = new THREE.PerspectiveCamera(specimen ? 28 : 60, 1, 1, 12000);
       // Steeper downward look so the horizon sits above the viewport — the
       // visible frame is filled with water instead of a sliver of sky.
       const ORBIT = new THREE.Vector3(0, 0, -200);
@@ -399,14 +420,22 @@ export default function FFTOceanCanvas({
         camDist * Math.cos(elev) * Math.cos(-az) + ORBIT.z,
       );
       camera.lookAt(ORBIT);
+      if (specimen) {
+        // A three-quarter view of a single patch, like a specimen on a table
+        const s = paramsRef.current.size;
+        const d = s * 3.05;
+        const az = -0.62, el = 0.5;
+        camera.position.set(Math.sin(az) * Math.cos(el) * d, Math.sin(el) * d, Math.cos(az) * Math.cos(el) * d);
+        camera.lookAt(0, -s * 0.04, 0);
+      }
 
       const renderer = new THREE.WebGLRenderer({
         antialias: true,
-        alpha: transparent,
+        alpha: transparent || specimen,
         powerPreference: "high-performance",
       });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setClearColor(new THREE.Color("#0a1828"), transparent ? 0 : 1);
+      renderer.setClearColor(new THREE.Color("#0a1828"), transparent || specimen ? 0 : 1);
 
       const gl = renderer.getContext() as WebGL2RenderingContext;
       // WebGL2 ships with float render targets but we still need this for filtering
@@ -456,11 +485,18 @@ export default function FFTOceanCanvas({
             u_res: { value: RESOLUTION },
           },
           vertexShader: fullscreenVS,
+          // Random starting phase per wave — the spectrum itself is deterministic,
+          // so these phases are the only source of randomness in the sea state.
           fragmentShader: `
             precision highp float;
+            uniform float u_seed;
+            float hash(vec2 p) {
+              p = fract(p * vec2(123.34, 456.21) + u_seed);
+              p += dot(p, p + 45.32);
+              return fract(p.x * p.y);
+            }
             void main() {
-              // DEBUG: constant 3.14159 — TR should show medium gray (0.5)
-              gl_FragColor = vec4(3.14159, 0.0, 0.0, 1.0);
+              gl_FragColor = vec4(hash(gl_FragCoord.xy) * 6.28318530718, 0.0, 0.0, 1.0);
             }
           `,
         });
@@ -529,9 +565,11 @@ export default function FFTOceanCanvas({
       renderPass(initialSpectrumRT, initialSpectrumMat);
 
       // -- Ocean mesh --
+      // Specimen: exactly one FFT patch, so displacement maps 1:1 onto the mesh
+      const geometrySize = specimen ? paramsRef.current.size : GEOMETRY_SIZE;
       const oceanGeom = new THREE.PlaneGeometry(
-        GEOMETRY_SIZE,
-        GEOMETRY_SIZE,
+        geometrySize,
+        geometrySize,
         GEOMETRY_RESOLUTION - 1,
         GEOMETRY_RESOLUTION - 1,
       );
@@ -544,7 +582,7 @@ export default function FFTOceanCanvas({
           u_displacementMap: { value: displacementRT.texture },
           u_normalMap: { value: normalRT.texture },
           u_size: { value: paramsRef.current.size },
-          u_geometrySize: { value: GEOMETRY_SIZE },
+          u_geometrySize: { value: geometrySize },
           u_cameraPosition: { value: new THREE.Vector3() },
           u_oceanColor: { value: new THREE.Color(0.004, 0.016, 0.047) },
           u_skyColor: { value: new THREE.Color(3.2, 9.6, 12.8) },
@@ -568,6 +606,23 @@ export default function FFTOceanCanvas({
         renderer.setSize(w, h, false);
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
+        camera.updateMatrixWorld();
+        const v = new THREE.Vector3();
+        const ray = new THREE.Raycaster();
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        onViewRef.current?.({
+          width: w,
+          height: h,
+          project: (x, y, z) => {
+            v.set(x, y, z).project(camera);
+            return [((v.x + 1) / 2) * w, ((1 - v.y) / 2) * h];
+          },
+          ground: (px, py) => {
+            ray.setFromCamera(new THREE.Vector2((px / w) * 2 - 1, -(py / h) * 2 + 1), camera);
+            const hit = ray.ray.intersectPlane(plane, new THREE.Vector3());
+            return hit ? [hit.x, hit.z] : null;
+          },
+        });
       };
       container.appendChild(renderer.domElement);
       resize();
@@ -667,12 +722,24 @@ export default function FFTOceanCanvas({
         renderer.setRenderTarget(null);
         renderer.render(scene, camera);
 
-        frameId = requestAnimationFrame(tick);
+        frameId = visible ? requestAnimationFrame(tick) : 0;
       };
+      // Pause the simulation while the canvas is scrolled out of view
+      let visible = true;
+      const io = new IntersectionObserver(([e]) => {
+        const was = visible;
+        visible = e.isIntersecting;
+        if (visible && !was) {
+          clock.getDelta();
+          frameId = requestAnimationFrame(tick);
+        }
+      });
+      io.observe(container);
       tick();
 
       cleanup = () => {
         cancelAnimationFrame(frameId);
+        io.disconnect();
         ro.disconnect();
         window.removeEventListener("resize", resize);
         [
@@ -706,7 +773,7 @@ export default function FFTOceanCanvas({
       cleanup();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transparent]);
+  }, [transparent, specimen]);
 
   return <div ref={containerRef} className="ocean-canvas-host" />;
 }

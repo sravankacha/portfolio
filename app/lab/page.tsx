@@ -54,7 +54,7 @@ const experiments = [
 
 export default function LabPage() {
   return (
-    <div className="max-w-3xl mx-auto px-6 py-20">
+    <div className="max-w-5xl mx-auto px-6 py-20 [&>*]:max-w-3xl">
       <h1 className="font-display text-5xl font-medium mb-4 heading-accent">
         Lab
       </h1>

@@ -17,7 +17,7 @@ export default function ProjectsPage() {
   const active = projects.filter((p) => !p.archived);
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-20">
+    <div className="max-w-5xl mx-auto px-6 py-20 [&>*]:max-w-3xl">
       <h1 className="font-display text-5xl font-medium mb-8 heading-accent">Projects</h1>
 
       {active.length > 0 && (

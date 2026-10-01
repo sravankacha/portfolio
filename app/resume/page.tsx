@@ -10,7 +10,7 @@ export const metadata = {
 
 export default function ResumePage() {
   return (
-    <div className="max-w-3xl mx-auto px-6 py-20">
+    <div className="max-w-5xl mx-auto px-6 py-20 [&>*]:max-w-3xl">
       <header className="mb-12 flex items-start justify-between gap-6 flex-wrap">
         <div>
           <h1 className="font-display text-5xl font-medium heading-accent">

@@ -9,7 +9,7 @@ const nav = [
 export default function Header() {
   return (
     <header className="border-b border-border">
-      <div className="max-w-3xl mx-auto px-6 py-5 flex items-center justify-between">
+      <div className="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between">
         <Link
           href="/"
           className="font-mono text-sm tracking-tight !text-foreground"

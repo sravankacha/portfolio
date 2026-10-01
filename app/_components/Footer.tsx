@@ -8,7 +8,7 @@ export default function Footer() {
   return (
     <footer className="border-t border-border mt-24 relative overflow-hidden">
       <OceanFishSchool />
-      <div className="max-w-3xl mx-auto px-6 py-8 flex flex-col gap-4 relative z-10">
+      <div className="max-w-5xl mx-auto px-6 py-8 flex flex-col gap-4 relative z-10">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between text-sm text-muted">
           <p>© {year} {profile.name}</p>
           <ul className="flex gap-4">
