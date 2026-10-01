@@ -8,7 +8,6 @@ const TOPOJSON_URL = "https://esm.sh/topojson-client@3";
 const COUNTRIES_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json";
 
 const TILE = 256;
-const TARGET_PX = 1600; // stitched width to aim for before downsampling
 
 export type Terrain = {
   w: number; // grid columns
@@ -16,6 +15,8 @@ export type Terrain = {
   heights: Float32Array; // meters; -1 where the cell is not raised
   metersPerCell: number; // ground size of one cell at the center latitude
   maxHeight: number;
+  /** full-resolution field for per-pixel lighting and color */
+  fine: { w: number; h: number; heights: Float32Array; metersPerPixel: number };
   /** lon/lat to fractional grid coords (x right, y down) */
   project: (lon: number, lat: number) => [number, number];
 };
@@ -26,10 +27,10 @@ const latToY = (lat: number, z: number) => {
   return ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * TILE * 2 ** z;
 };
 
-export function zoomFor(bbox: BBox): number {
+export function zoomFor(bbox: BBox, targetPx: number): number {
   const span = bbox[2] - bbox[0];
-  const z = Math.round(Math.log2((TARGET_PX * 360) / (TILE * span)));
-  return Math.max(2, Math.min(11, z));
+  const z = Math.round(Math.log2((targetPx * 360) / (TILE * span)));
+  return Math.max(2, Math.min(12, z));
 }
 
 async function loadTile(z: number, x: number, y: number): Promise<ImageBitmap | null> {
@@ -63,12 +64,42 @@ function loadCountries() {
   return countriesCache;
 }
 
+/** Box-average a W×H field down by `scale` (≥1). Cells with no land stay -1. */
+function downsample(src: Float32Array, W: number, H: number, scale: number) {
+  const w = Math.max(2, Math.round(W / scale));
+  const h = Math.max(2, Math.round(H / scale));
+  const out = new Float32Array(w * h);
+  for (let gy = 0; gy < h; gy++) {
+    const y0 = Math.floor(gy * scale), y1 = Math.min(H, Math.max(y0 + 1, Math.floor((gy + 1) * scale)));
+    for (let gx = 0; gx < w; gx++) {
+      const x0 = Math.floor(gx * scale), x1 = Math.min(W, Math.max(x0 + 1, Math.floor((gx + 1) * scale)));
+      let sum = 0, cnt = 0, land = 0;
+      for (let y = y0; y < y1; y++)
+        for (let x = x0; x < x1; x++) {
+          const v = src[y * W + x];
+          sum += v;
+          cnt++;
+          if (v > 0) land++;
+        }
+      // a cell is land when most of it is land, so coastlines don't bloat or erode
+      out[gy * w + gx] = cnt && land * 2 >= cnt ? Math.max(1, sum / cnt) : -1;
+    }
+  }
+  return { w, h, data: out };
+}
+
 export async function loadTerrain(
   bbox: BBox,
-  opts: { maxGrid: number; country?: string; onProgress?: (done: number, total: number) => void; signal?: { cancelled: boolean } }
+  opts: {
+    maxGrid: number; // mesh resolution (long side)
+    targetPx: number; // elevation resolution to fetch (long side, before the 4096 cap)
+    country?: string;
+    onProgress?: (done: number, total: number) => void;
+    signal?: { cancelled: boolean };
+  }
 ): Promise<Terrain | null> {
   const [west, south, east, north] = bbox;
-  const z = zoomFor(bbox);
+  const z = zoomFor(bbox, opts.targetPx);
   const px0 = Math.floor(lonToX(west, z));
   const px1 = Math.ceil(lonToX(east, z));
   const py0 = Math.floor(latToY(north, z));
@@ -102,69 +133,63 @@ export async function loadTerrain(
   await Promise.all(Array.from({ length: 8 }, worker));
   if (opts.signal?.cancelled) return null;
 
+  // Decode the stitched tiles to meters
   const px = ctx.getImageData(0, 0, W, H).data;
-
-  // Downsample to the render grid (box average)
-  const f = Math.max(W, H) / opts.maxGrid;
-  const scale = Math.max(1, f);
-  const w = Math.max(2, Math.round(W / scale));
-  const h = Math.max(2, Math.round(H / scale));
-  const heights = new Float32Array(w * h);
-  for (let gy = 0; gy < h; gy++) {
-    const y0 = Math.floor(gy * scale), y1 = Math.max(y0 + 1, Math.floor((gy + 1) * scale));
-    for (let gx = 0; gx < w; gx++) {
-      const x0 = Math.floor(gx * scale), x1 = Math.max(x0 + 1, Math.floor((gx + 1) * scale));
-      let sum = 0, cnt = 0;
-      for (let y = y0; y < y1 && y < H; y++)
-        for (let x = x0; x < x1 && x < W; x++) {
-          const i = (y * W + x) * 4;
-          sum += px[i] * 256 + px[i + 1] + px[i + 2] / 256 - 32768;
-          cnt++;
-        }
-      heights[gy * w + gx] = cnt ? sum / cnt : -1;
-    }
+  const raw = new Float32Array(W * H);
+  for (let i = 0; i < W * H; i++) {
+    const v = px[i * 4] * 256 + px[i * 4 + 1] + px[i * 4 + 2] / 256 - 32768;
+    raw[i] = v > 0 ? v : -1;
   }
 
-  // Country mask: rasterize its polygons onto the grid and flatten everything else
+  // Country mask at full resolution: everything outside the borders stays paper
   if (countryP) {
     const countries = await countryP;
     if (opts.signal?.cancelled) return null;
     const c = countries.find((k) => k.name === opts.country);
     if (c) {
-      const m = document.createElement("canvas");
-      m.width = w;
-      m.height = h;
-      const mc = m.getContext("2d", { willReadFrequently: true })!;
+      const mctx = (() => {
+        const m = document.createElement("canvas");
+        m.width = W;
+        m.height = H;
+        return m.getContext("2d", { willReadFrequently: true })!;
+      })();
       const polys = c.geometry.type === "Polygon" ? [c.geometry.coordinates] : c.geometry.coordinates;
-      mc.fillStyle = "#fff";
-      mc.beginPath();
+      mctx.fillStyle = "#fff";
+      mctx.beginPath();
       for (const poly of polys)
         for (const ring of poly) {
           ring.forEach(([lon, lat], i) => {
-            const x = (lonToX(lon, z) - px0) / scale;
-            const y = (latToY(lat, z) - py0) / scale;
-            if (i === 0) mc.moveTo(x, y);
-            else mc.lineTo(x, y);
+            const x = lonToX(lon, z) - px0;
+            const y = latToY(lat, z) - py0;
+            if (i === 0) mctx.moveTo(x, y);
+            else mctx.lineTo(x, y);
           });
-          mc.closePath();
+          mctx.closePath();
         }
-      mc.fill("evenodd");
-      const mask = mc.getImageData(0, 0, w, h).data;
-      for (let i = 0; i < w * h; i++) if (mask[i * 4 + 3] < 128) heights[i] = -1;
+      mctx.fill("evenodd");
+      const mask = mctx.getImageData(0, 0, W, H).data;
+      for (let i = 0; i < W * H; i++) if (mask[i * 4 + 3] < 128) raw[i] = -1;
     }
   }
 
+  // Detail field for lighting (capped to a safe texture size) and the coarser mesh grid
+  const fineScale = Math.max(1, Math.max(W, H) / 4096);
+  const fine = fineScale > 1 ? downsample(raw, W, H, fineScale) : { w: W, h: H, data: raw };
+  const scale = Math.max(1, Math.max(W, H) / opts.maxGrid);
+  const grid = downsample(raw, W, H, scale);
+
   let maxHeight = 0;
-  for (let i = 0; i < heights.length; i++) if (heights[i] > maxHeight) maxHeight = heights[i];
+  for (let i = 0; i < fine.data.length; i++) if (fine.data[i] > maxHeight) maxHeight = fine.data[i];
 
   const midLat = ((south + north) / 2) * (Math.PI / 180);
   const metersPerPixel = (40075016.686 * Math.cos(midLat)) / (TILE * 2 ** z);
   return {
-    w,
-    h,
-    heights,
+    w: grid.w,
+    h: grid.h,
+    heights: grid.data,
     metersPerCell: metersPerPixel * scale,
     maxHeight,
+    fine: { w: fine.w, h: fine.h, heights: fine.data, metersPerPixel: metersPerPixel * fineScale },
     project: (lon, lat) => [(lonToX(lon, z) - px0) / scale, (latToY(lat, z) - py0) / scale],
   };
 }

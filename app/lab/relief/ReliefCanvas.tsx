@@ -82,8 +82,6 @@ function rampColor(stops: Stop[], m: number): [number, number, number] {
   return lerpHex(last, last, 0);
 }
 
-const srgbToLinear = (c: number) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
-
 type Api = {
   setRegion: (id: string) => void;
   setExaggeration: (ex: number | null) => void;
@@ -123,7 +121,7 @@ export default function ReliefCanvas(props: ReliefProps) {
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.shadowMap.type = THREE.PCFShadowMap; // crisp edges, like a hard studio light
         host.appendChild(renderer.domElement);
 
         const scene = new THREE.Scene();
@@ -134,9 +132,9 @@ export default function ReliefCanvas(props: ReliefProps) {
         controls.maxDistance = 40;
         controls.screenSpacePanning = true;
 
-        const hemi = new THREE.HemisphereLight(0xffffff, 0xd9d3c4, 1.25);
+        const hemi = new THREE.HemisphereLight(0xffffff, 0xd9d3c4, 0.72);
         scene.add(hemi);
-        const sun = new THREE.DirectionalLight(0xfff4e2, 2.6);
+        const sun = new THREE.DirectionalLight(0xfff4e2, 3.1);
         sun.castShadow = true;
         sun.shadow.mapSize.set(mobile ? 2048 : 4096, mobile ? 2048 : 4096);
         const sc = sun.shadow.camera;
@@ -151,10 +149,24 @@ export default function ReliefCanvas(props: ReliefProps) {
         paper.receiveShadow = true;
         scene.add(paper);
 
+        // Color and lighting come from full-resolution textures; the mesh only carries
+        // shape and shadows. That keeps ridges and valleys sharp between mesh vertices.
+        const anisotropy = renderer.capabilities.getMaxAnisotropy();
+        const makeTex = (w: number, h: number, srgb: boolean) => {
+          const t = new THREE.DataTexture(new Uint8Array(w * h * 4), w, h, THREE.RGBAFormat);
+          t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+          t.generateMipmaps = true;
+          t.minFilter = THREE.LinearMipmapLinearFilter;
+          t.magFilter = THREE.LinearFilter;
+          t.anisotropy = anisotropy;
+          return t;
+        };
+        let colorTex: THREENS.DataTexture | null = null;
+        let normalTex: THREENS.DataTexture | null = null;
         const landMat = new THREE.MeshStandardMaterial({
-          vertexColors: true,
-          roughness: 0.92,
+          roughness: 0.9,
           metalness: 0,
+          normalMapType: THREE.ObjectSpaceNormalMap,
         });
         let land: THREENS.Mesh | null = null;
         let grid: THREENS.LineSegments | null = null;
@@ -212,7 +224,33 @@ export default function ReliefCanvas(props: ReliefProps) {
             }
           pos.needsUpdate = true;
           land.geometry.computeVertexNormals();
+          bakeNormals();
           render();
+        };
+
+        // Object-space normals from the full-resolution heights at the current exaggeration
+        const bakeNormals = () => {
+          if (!terrain || !normalTex) return;
+          const { w, h, heights } = terrain.fine;
+          const texel = MAP_W / w; // world units per texel
+          const k = (unitsPerMeter * exaggeration) / (2 * texel);
+          const out = normalTex.image.data as Uint8Array;
+          const H = (x: number, y: number) => {
+            const v = heights[Math.min(h - 1, Math.max(0, y)) * w + Math.min(w - 1, Math.max(0, x))];
+            return v > 0 ? v : 0;
+          };
+          for (let y = 0; y < h; y++)
+            for (let x = 0; x < w; x++) {
+              const sx = (H(x + 1, y) - H(x - 1, y)) * k;
+              const sz = (H(x, y + 1) - H(x, y - 1)) * k;
+              const inv = 1 / Math.sqrt(sx * sx + 1 + sz * sz);
+              const i = (y * w + x) * 4;
+              out[i] = (-sx * inv * 0.5 + 0.5) * 255;
+              out[i + 1] = (inv * 0.5 + 0.5) * 255;
+              out[i + 2] = (-sz * inv * 0.5 + 0.5) * 255;
+              out[i + 3] = 255;
+            }
+          normalTex.needsUpdate = true;
         };
 
         const applyStyle = () => {
@@ -220,16 +258,30 @@ export default function ReliefCanvas(props: ReliefProps) {
           const c = new THREE.Color(ramp.paper);
           paperMat.color.copy(c);
           // a low sun barely lights a flat sheet; let the paper glow a little so it reads as white stock
-          paperMat.emissive.copy(c).multiplyScalar(0.42);
+          paperMat.emissive.copy(c).multiplyScalar(0.5);
           renderer.setClearColor(c, 1);
-          if (land) {
-            const col = land.geometry.getAttribute("color") as THREENS.BufferAttribute;
-            for (let gy = 0; gy < gh; gy++)
-              for (let gx = 0; gx < gw; gx++) {
-                const [r, g, b] = rampColor(ramp.stops, Math.max(0, heightAt(gx, gy)));
-                col.setXYZ(gy * gw + gx, srgbToLinear(r), srgbToLinear(g), srgbToLinear(b));
+          if (terrain && colorTex) {
+            // hypsometric tint per texel via a 10 m lookup table
+            const lut = new Uint8Array(1001 * 3);
+            for (let i = 0; i <= 1000; i++) {
+              const [r, g, b] = rampColor(ramp.stops, i * 10);
+              lut[i * 3] = r * 255; lut[i * 3 + 1] = g * 255; lut[i * 3 + 2] = b * 255;
+            }
+            const paperRGB = [(ramp.paper >> 16) & 255, (ramp.paper >> 8) & 255, ramp.paper & 255];
+            const { heights } = terrain.fine;
+            const out = colorTex.image.data as Uint8Array;
+            for (let i = 0; i < heights.length; i++) {
+              const m = heights[i];
+              const o = i * 4;
+              if (m > 0) {
+                const j = Math.min(1000, Math.round(m / 10)) * 3;
+                out[o] = lut[j]; out[o + 1] = lut[j + 1]; out[o + 2] = lut[j + 2];
+              } else {
+                out[o] = paperRGB[0]; out[o + 1] = paperRGB[1]; out[o + 2] = paperRGB[2];
               }
-            col.needsUpdate = true;
+              out[o + 3] = 255;
+            }
+            colorTex.needsUpdate = true;
           }
           if (grid) {
             grid.visible = ramp.grid !== 0;
@@ -305,7 +357,8 @@ export default function ReliefCanvas(props: ReliefProps) {
           const onProgress = propsRef.current.onProgress;
           onProgress?.("loading elevation…");
           const t = await loadTerrain(region.bbox, {
-            maxGrid: mobile ? 380 : 640,
+            maxGrid: mobile ? 380 : 900,
+            targetPx: mobile ? 1400 : 2800,
             country: region.country,
             signal: token,
             onProgress: (d, n) => onProgress?.(`loading elevation · ${d}/${n} tiles`),
@@ -340,7 +393,22 @@ export default function ReliefCanvas(props: ReliefProps) {
             }
           geo.setIndex(new THREE.BufferAttribute(index, 1));
           geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-          geo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(gw * gh * 3), 3));
+          // UVs map each vertex to the center of its grid cell in the detail textures
+          const uvs = new Float32Array(gw * gh * 2);
+          for (let gy = 0; gy < gh; gy++)
+            for (let gx = 0; gx < gw; gx++) {
+              const i = (gy * gw + gx) * 2;
+              uvs[i] = Math.min(1, Math.max(0, (gx - 0.5) / t.w));
+              uvs[i + 1] = Math.min(1, Math.max(0, (gy - 0.5) / t.h));
+            }
+          geo.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+          colorTex?.dispose();
+          normalTex?.dispose();
+          colorTex = makeTex(t.fine.w, t.fine.h, true);
+          normalTex = makeTex(t.fine.w, t.fine.h, false);
+          landMat.map = colorTex;
+          landMat.normalMap = normalTex;
+          landMat.needsUpdate = true;
           land = new THREE.Mesh(geo, landMat);
           land.castShadow = true;
           land.receiveShadow = true;
@@ -397,6 +465,8 @@ export default function ReliefCanvas(props: ReliefProps) {
           land?.geometry.dispose();
           grid?.geometry.dispose();
           landMat.dispose();
+          colorTex?.dispose();
+          normalTex?.dispose();
           paperMat.dispose();
           renderer.dispose();
           renderer.domElement.remove();
