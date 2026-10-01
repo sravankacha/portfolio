@@ -623,3 +623,181 @@ a:hover {
     animation: none;
   }
 }
+
+/* =========================================================
+   Lab index: centered card carousel over a blurred preview
+   ========================================================= */
+:root, [data-theme="editorial"] { --lab-veil: rgba(255, 255, 255, 0.62); --lab-card: rgba(255, 255, 255, 0.72); }
+[data-theme="diner"] { --lab-veil: rgba(10, 0, 22, 0.66); --lab-card: rgba(20, 8, 36, 0.7); }
+[data-theme="ocean"] { --lab-veil: rgba(4, 9, 22, 0.6); --lab-card: rgba(8, 12, 28, 0.72); }
+[data-theme="origami"] { --lab-veil: rgba(215, 232, 225, 0.66); --lab-card: rgba(240, 246, 243, 0.78); }
+
+.lab-stage {
+  position: relative;
+}
+.lab-stage__bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+/* the fixed ocean/origami canvases sit at z 0; lift the stage's own background above them */
+[data-theme="ocean"] .lab-stage__bg,
+[data-theme="origami"] .lab-stage__bg { z-index: 0; }
+[data-theme="origami"] .lab-stage > :not(.lab-stage__bg) { position: relative; z-index: 1; }
+.lab-stage__bg-layer {
+  position: absolute;
+  inset: -8%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(46px) saturate(1.35);
+  transform: scale(1.12);
+  transition: opacity 0.9s ease;
+}
+.lab-stage__veil {
+  position: absolute;
+  inset: 0;
+  background: var(--lab-veil);
+}
+
+.lab-track {
+  --card-w: min(560px, 78vw);
+  display: flex;
+  gap: clamp(16px, 3vw, 36px);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 28px calc(50vw - var(--card-w) / 2) 36px;
+  scrollbar-width: none;
+  perspective: 1400px;
+  outline: none;
+}
+.lab-track::-webkit-scrollbar { display: none; }
+.lab-track:focus-visible .lab-card.is-active .lab-card__hit { box-shadow: 0 0 0 3px var(--accent), 0 30px 60px -25px rgba(0, 0, 0, 0.5); }
+
+.lab-card {
+  --d: 0;
+  --a: 0;
+  flex: 0 0 var(--card-w);
+  scroll-snap-align: center;
+  transform: translateZ(calc(var(--a) * -140px)) rotateY(calc(var(--d) * -14deg)) scale(calc(1 - var(--a) * 0.1));
+  opacity: calc(1 - var(--a) * 0.45);
+  transition: opacity 0.2s linear;
+  will-change: transform;
+}
+.lab-card__hit {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--lab-card);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  cursor: pointer;
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.45);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.lab-card.is-active .lab-card__hit:hover { transform: translateY(-4px); box-shadow: 0 40px 70px -28px rgba(0, 0, 0, 0.55); }
+.lab-card__media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.08);
+}
+.lab-card__open {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(10, 10, 14, 0.62);
+  color: #fff;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.lab-card.is-active .lab-card__open { opacity: 1; transform: none; }
+.lab-card__body { padding: 16px 20px 18px; }
+
+.lab-stage__caption {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0 24px;
+  text-align: center;
+}
+.lab-stage__summary {
+  min-height: 4.8em;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--foreground) 86%, transparent);
+}
+.lab-stage__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 12px;
+}
+.lab-stage__nav > button {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--lab-card);
+  color: var(--foreground);
+}
+.lab-stage__nav > button:disabled { opacity: 0.35; }
+.lab-stage__dots { display: flex; gap: 8px; }
+.lab-stage__dots button {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--foreground) 30%, transparent);
+  transition: width 0.3s ease, background 0.3s ease;
+}
+.lab-stage__dots button.is-active { width: 26px; background: var(--accent); }
+
+/* Diagonal split transition (see SplitReveal) */
+.split-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+}
+.split-reveal__cover {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  transform-origin: 0 0;
+  overflow: visible;
+}
+.split-reveal__half {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  will-change: transform;
+}
+.split-reveal__seam {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom right, transparent calc(50% - 1.5px), rgba(255, 255, 255, 0.95) 50%, transparent calc(50% + 1.5px));
+  opacity: 0;
+}
+.split-reveal__seam.is-open { animation: split-seam 0.6s ease-out; }
+@keyframes split-seam {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lab-card { transform: none; }
+  .lab-stage__bg-layer { transition: none; }
+}

@@ -27,7 +27,7 @@ If the dev server serves stale CSS, stop it, `rm -rf .next`, restart.
 - **Hero art:** `app/_components/HeroArt.tsx` holds every theme's hero slot; CSS shows the active one. Client pieces gate themselves with `useThemeId()` (reads `<html data-theme>`). Editorial = `GlassBlob` (WebGL glass, CSS blob as fallback). Ocean = a full-screen live sea (`ocean/OceanVoyage`, `FFTOceanCanvas variant="voyage"`, patch tiled at true scale) with a procedural Spanish galleon (`ocean/ship.ts`; hull, sail and flag detail painted into canvas textures; cloth shader on sails). Sky, water and lights follow the visitor's local time (`ocean/sky.ts`: solar elevation from clock + date at an assumed 38° latitude, palette keyframes from night to midday, repainted every minute); preview any time with `?theme=ocean&time=HH:MM`. The hero slot is `ocean/ShipHelm`: drag or arrow keys steer heading and distance via shared state in `ocean/helm.ts`; the heading sets the FFT wind.
 - **Origami hero:** animals are sculpted from blended ellipsoids and round cones in `app/_components/origami/animals.ts`, then meshed (surface nets, ~15–40k faceted triangles) in a module Web Worker. Transitions crumple into a shared paper ball via morph targets, so animals need no shared topology. Add an animal by writing a sculpt function and an `ANIMALS` entry.
 - **Web Workers:** create them with `new Worker(new URL("./x.worker.ts", import.meta.url), { type: "module" })`. Without `type: "module"`, Turbopack copies the raw `.ts` file instead of bundling it.
-- **Lab:** each experiment is `app/lab/<slug>/` with `page.tsx` (metadata and canonical) and a client component. Fullscreen labs use `app/lab/_shared/LabChrome.tsx` for the back button and panels. Register every new experiment in the `experiments` list in `app/lab/page.tsx`.
+- **Lab:** each experiment is `app/lab/<slug>/` with `page.tsx` (metadata and canonical) and a client component. Fullscreen labs use `app/lab/_shared/LabChrome.tsx` for the back button and panels. Register every new experiment in `app/lab/_shared/experiments.ts` and add a 16:10 preview at `public/lab/thumbs/<slug>.jpg` (the lab index carousel and its blurred background use it, and the diagonal split transition opens from it). The transition lives in `app/_components/SplitReveal.tsx`, mounted in the root layout so it survives navigation; trigger it with `splitTo(href, img, element)`.
 
 ## Showcase bar for new themes and experiments
 Before calling a creative exploration done:
@@ -38,7 +38,7 @@ Before calling a creative exploration done:
 5. **Resilience:** works without WebGL or on low-power devices with a graceful fallback. Respects `prefers-reduced-motion` by pausing or simplifying animation.
 6. **Accessibility:** decorative canvases are `aria-hidden`. Interactive controls are keyboard reachable with visible focus.
 7. **Mobile:** check at 390px wide as well as 1440px.
-8. **Discoverability:** metadata, canonical URL, lab index entry, and a sitemap entry if routes are listed there.
+8. **Discoverability:** metadata, canonical URL, lab index entry with a preview image, and a sitemap entry if routes are listed there.
 9. **Verified visually:** screenshots at both widths, and for themes, `?theme=<id>` on home and one inner page.
 
 ## Known traps

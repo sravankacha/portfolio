@@ -1,86 +1,23 @@
-import Link from "next/link";
+import LabCarousel from "./LabCarousel";
 
 export const metadata = {
   title: "Lab",
   description:
-    "Small experiments and visual tinkering — interactive demos, shader playgrounds, and design probes.",
+    "Small experiments and visual tinkering: interactive demos, shader playgrounds, and design probes.",
   alternates: { canonical: "https://sravankacha.com/lab/" },
 };
 
-const experiments = [
-  {
-    slug: "relief",
-    title: "Relief",
-    summary:
-      "Raised-relief maps of continents, countries and mountain ranges from real elevation data. Dial the vertical exaggeration from true scale to 300× and move the sun.",
-    tag: "data · webgl",
-  },
-  {
-    slug: "pipe",
-    title: "Endless pipe",
-    summary:
-      "A banded pipe streams away into the screen, inspired by an in-flight map animation. Click anywhere and it grows toward that point, keeping every path it has drawn.",
-    tag: "interaction · webgl",
-  },
-  {
-    slug: "globe",
-    title: "Globe",
-    summary:
-      "Interactive 3D globe with country borders. Project public datasets as spikes — earthquakes, volcanoes, the ISS in real time, population.",
-    tag: "data · webgl",
-  },
-  {
-    slug: "venom",
-    title: "Venom",
-    summary:
-      "A sticky tentacled creature follows your cursor — Bezier tentacles snap to the nearest anchor points with elastic snap-and-whip.",
-    tag: "interaction · svg",
-  },
-  {
-    slug: "waves",
-    title: "FFT ocean control panel",
-    summary:
-      "Live sliders for the Tessendorf FFT ocean shader powering the ocean theme — wind direction, patch size, choppiness.",
-    tag: "shader · webgl",
-  },
-  {
-    slug: "themes",
-    title: "Theme gallery",
-    summary:
-      "Side-by-side previews of every theme. Click to swap. New themes get listed here as they ship.",
-    tag: "design · variants",
-  },
-];
-
 export default function LabPage() {
   return (
-    <div className="max-w-5xl mx-auto px-6 py-20 [&>*]:max-w-3xl">
-      <h1 className="font-display text-5xl font-medium mb-4 heading-accent">
-        Lab
-      </h1>
-      <p className="text-foreground/85 leading-relaxed mb-12 max-w-xl">
-        Small experiments and visual tinkering. Some serve a purpose, some are
-        just fun — every one of them uses content from the rest of the site.
-      </p>
-
-      <ul className="space-y-4">
-        {experiments.map((e) => (
-          <li
-            key={e.slug}
-            className="border border-border rounded-xl p-6 hover:border-accent transition-colors bg-surface"
-          >
-            <Link href={`/lab/${e.slug}`} className="!text-foreground block">
-              <div className="flex items-baseline justify-between gap-4 mb-2">
-                <h2 className="font-display text-xl font-medium">{e.title}</h2>
-                <span className="font-mono text-xs text-muted shrink-0">
-                  {e.tag}
-                </span>
-              </div>
-              <p className="text-foreground/80 leading-relaxed">{e.summary}</p>
-            </Link>
-          </li>
-        ))}
-      </ul>
+    <div className="pt-16 pb-12">
+      <div className="max-w-5xl mx-auto px-6 mb-10">
+        <h1 className="font-display text-5xl font-medium mb-4 heading-accent">Lab</h1>
+        <p className="text-foreground/85 leading-relaxed max-w-xl">
+          Small experiments and visual tinkering. Some serve a purpose, some are
+          just fun. Browse with the arrows, then open one.
+        </p>
+      </div>
+      <LabCarousel />
     </div>
   );
 }
