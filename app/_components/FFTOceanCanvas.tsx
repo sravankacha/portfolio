@@ -282,6 +282,26 @@ const oceanVS = /* glsl */ `
 `;
 
 // Ocean fragment: fresnel + diffuse + HDR tone-map (lifted from david.li)
+// Dusk sky shared by the voyage sky dome and the water's reflections, so the
+// horizon line matches exactly. d = view direction, S = sun direction.
+export const DUSK_SKY = /* glsl */ `
+  vec3 duskSky(vec3 d, vec3 S) {
+    float e = max(d.y, 0.0);
+    float t = pow(e, 0.35);
+    vec3 horizon = vec3(1.15, 0.5, 0.26);  // ember orange at the waterline
+    vec3 band = vec3(0.17, 0.12, 0.3);     // indigo-violet afterglow
+    vec3 zenith = vec3(0.03, 0.04, 0.12);  // deep indigo overhead
+    vec3 c = mix(horizon, band, smoothstep(0.0, 0.55, t));
+    c = mix(c, zenith, smoothstep(0.5, 1.0, t));
+    // the glow is warmer and wider toward the sun
+    float s = max(dot(d, S), 0.0);
+    c += vec3(1.4, 0.62, 0.25) * pow(s, 14.0) * 0.8 * (1.0 - t * 0.6);
+    c += vec3(3.2, 1.9, 1.0) * pow(s, 2400.0) * 7.0; // sun disc
+    return c;
+  }
+  vec3 duskTone(vec3 c) { return 1.0 - exp(-c * 1.15); }
+`;
+
 const oceanFS = /* glsl */ `
   precision highp float;
   uniform sampler2D u_normalMap;
@@ -303,9 +323,42 @@ const oceanFS = /* glsl */ `
     return 1.0 - exp(-color * exposure);
   }
 
+  ${DUSK_SKY}
+
+  // Voyage at dusk: deep water mirrors the sunset sky; a glitter path runs to the sun
+  vec4 shadeDusk(vec3 N, vec3 V) {
+    vec3 S = normalize(u_sunDirection);
+    float NdotV = max(dot(N, V), 0.0);
+    float fres = 0.02 + 0.98 * pow(1.0 - NdotV, 5.0);
+    vec3 R = reflect(-V, N);
+    R.y = abs(R.y);
+    vec3 refl = duskSky(R, S);
+    // body color: dark sea, a little teal light through thin crests
+    float h = v_position.y;
+    vec3 deep = vec3(0.0, 0.03, 0.065);
+    vec3 body = deep * (0.35 + 0.65 * max(dot(N, S), 0.0))
+              + vec3(0.0, 0.09, 0.1) * smoothstep(0.0, 3.0, h) * (1.0 - fres);
+    vec3 color = mix(body, refl, fres);
+    // breaking crests catch the last light
+    float steep = 1.0 - N.y;
+    float foam = smoothstep(0.42, 0.68, steep) * smoothstep(1.6, 3.2, h);
+    float dist = length(u_cameraPosition.xz - v_position.xz);
+    foam *= 1.0 - smoothstep(250.0, 900.0, dist);
+    color = mix(color, vec3(0.75, 0.62, 0.58), clamp(foam, 0.0, 0.85));
+    // haze into the sky dome's horizon color at this bearing
+    vec3 toward = normalize(vec3(-V.x, 0.0, -V.z));
+    float fog = smoothstep(u_fogNear, u_fogFar, dist);
+    color = mix(color, duskSky(toward, S), fog);
+    return vec4(duskTone(color), u_alpha);
+  }
+
   void main() {
     vec3 normal = texture2D(u_normalMap, v_coordinates).rgb;
     vec3 view = normalize(u_cameraPosition - v_position);
+    if (u_depth > 0.0) {
+      gl_FragColor = shadeDusk(normal, view);
+      return;
+    }
     float NdotV = max(dot(normal, view), 0.0);
     float fresnel = 0.02 + 0.98 * pow(1.0 - NdotV, 5.0);
     vec3 sky = fresnel * u_skyColor;
@@ -313,14 +366,6 @@ const oceanFS = /* glsl */ `
     vec3 water = (1.0 - fresnel) * u_oceanColor * u_skyColor * diffuse;
     vec3 color = sky + water;
     vec3 outColor = hdr(color, u_exposure);
-    if (u_depth > 0.0) {
-      float h = v_position.y;
-      // whitecaps: only crests that are both high and steep break into foam (fade with distance)
-      float steep = 1.0 - normal.y;
-      float foam = smoothstep(0.42, 0.68, steep) * smoothstep(1.6, 3.2, h);
-      foam *= 1.0 - smoothstep(250.0, 900.0, length(u_cameraPosition.xz - v_position.xz));
-      outColor = mix(outColor, vec3(0.93, 0.97, 1.0), clamp(foam, 0.0, 0.9));
-    }
     // haze toward the horizon so the mesh edge melts into the sky
     float fog = smoothstep(u_fogNear, u_fogFar, length(u_cameraPosition.xz - v_position.xz));
     gl_FragColor = vec4(mix(outColor, u_fogColor, fog), u_alpha);
@@ -679,7 +724,10 @@ export default function FFTOceanCanvas({
           // a low camera sees mostly grazing reflections; voyage dims the sky so they don't blow out
           u_skyColor: { value: new THREE.Color(3.2, 9.6, 12.8) },
           u_sunDirection: {
-            value: new THREE.Vector3(-1.0, 1.0, 1.0).normalize(),
+            // voyage: a setting sun just above the horizon, ahead and to the right
+            value: voyage
+              ? new THREE.Vector3(0.5, 0.06, -0.86).normalize()
+              : new THREE.Vector3(-1.0, 1.0, 1.0).normalize(),
           },
           u_exposure: { value: voyage ? 0.27 : 0.35 }, // voyage sits under text; a touch deeper
           u_alpha: { value: transparent ? 0.97 : 1.0 },
@@ -714,19 +762,32 @@ export default function FFTOceanCanvas({
       // Voyage: daylight sky and whatever the caller sails on the water
       let hook: ReturnType<OceanSceneHook> | null = null;
       if (voyage) {
-        const sky = document.createElement("canvas");
-        sky.width = 2;
-        sky.height = 256;
-        const sg = sky.getContext("2d")!;
-        const grad = sg.createLinearGradient(0, 0, 0, 256);
-        grad.addColorStop(0, "#6fa7d6");
-        grad.addColorStop(0.55, "#a9cbe6");
-        grad.addColorStop(1, "#dbe9f1");
-        sg.fillStyle = grad;
-        sg.fillRect(0, 0, 2, 256);
-        const skyTex = new THREE.CanvasTexture(sky);
-        skyTex.colorSpace = THREE.SRGBColorSpace;
-        scene.background = skyTex;
+        // Sky dome around the camera, shaded with the same dusk function as the water
+        const skyMat = new THREE.ShaderMaterial({
+          side: THREE.BackSide,
+          depthWrite: false,
+          uniforms: { u_sun: { value: oceanMat.uniforms.u_sunDirection.value } },
+          vertexShader: /* glsl */ `
+            varying vec3 vDir;
+            void main() {
+              vDir = normalize(position);
+              vec4 p = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              gl_Position = p.xyww; // pin to the far plane
+            }
+          `,
+          fragmentShader: /* glsl */ `
+            uniform vec3 u_sun;
+            varying vec3 vDir;
+            ${DUSK_SKY}
+            void main() { gl_FragColor = vec4(duskTone(duskSky(normalize(vDir), normalize(u_sun))), 1.0); }
+          `,
+        });
+        const skyDome = new THREE.Mesh(new THREE.SphereGeometry(8000, 48, 24), skyMat);
+        skyDome.position.copy(camera.position);
+        skyDome.renderOrder = -1;
+        skyDome.frustumCulled = false;
+        scene.add(skyDome);
+        renderer.setClearColor(0x0b1020, 1);
         hook =
           sceneHookRef.current?.({
             THREE,

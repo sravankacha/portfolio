@@ -21,8 +21,9 @@ export default function OceanVoyage() {
   const theme = useThemeId();
 
   const sceneHook = useCallback<OceanSceneHook>(({ THREE, scene, camera, renderer, setWind, sampleHeight }) => {
-    const hemi = new THREE.HemisphereLight(0xdcecff, 0x23384a, 1.0);
-    const sun = new THREE.DirectionalLight(0xfff1dc, 2.6);
+    // dusk: violet sky fill, dark sea bounce, a low ember sun ahead-right
+    const hemi = new THREE.HemisphereLight(0x6b5c8f, 0x081420, 0.9);
+    const sun = new THREE.DirectionalLight(0xffa15c, 2.4);
     // soft studio reflections for gilding and varnished wood (ship materials only)
     const pmrem = new THREE.PMREMGenerator(renderer);
     const envScene = skyEnvironment(THREE);
@@ -34,7 +35,8 @@ export default function OceanVoyage() {
         (m.material as THREENS.Material).dispose();
       }
     });
-    sun.position.set(-300, 300, 300); // matches the ocean shader's sun
+    sun.position.set(0.5, 0.06, -0.86).normalize().multiplyScalar(400); // matches the ocean shader's sun
+    sun.position.y += 40; // a touch higher than the disc so the hull isn't lit edge-on only
     scene.add(hemi, sun);
 
     const ship = buildShip(THREE);
@@ -42,7 +44,7 @@ export default function OceanVoyage() {
       const m = (o as THREENS.Mesh).material as THREENS.MeshStandardMaterial | undefined;
       if (m && "envMap" in m) {
         m.envMap = env;
-        m.envMapIntensity = 0.55;
+        m.envMapIntensity = 0.45;
       }
     });
     scene.add(ship.root);
