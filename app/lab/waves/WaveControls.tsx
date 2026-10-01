@@ -9,7 +9,7 @@ import { BackButton, FloatingPanel } from "../_shared/LabChrome";
 const FFTOceanCanvas = dynamic(() => import("../../_components/FFTOceanCanvas"), {
   ssr: false,
   loading: () => (
-    <div className="absolute inset-0 grid place-items-center text-muted text-sm font-mono">
+    <div data-lab-loading className="absolute inset-0 grid place-items-center text-muted text-sm font-mono">
       loading shader…
     </div>
   ),

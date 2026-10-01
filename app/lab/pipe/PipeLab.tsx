@@ -7,7 +7,7 @@ import { BackButton, FloatingPanel } from "../_shared/LabChrome";
 const PipeCanvas = dynamic(() => import("./PipeCanvas"), {
   ssr: false,
   loading: () => (
-    <div className="absolute inset-0 grid place-items-center text-sm font-mono text-white/60">
+    <div data-lab-loading className="absolute inset-0 grid place-items-center text-sm font-mono text-white/60">
       laying pipe…
     </div>
   ),

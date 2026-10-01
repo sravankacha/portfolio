@@ -393,7 +393,7 @@ export default function GlobeCanvas({ dataset, onCount }: Props) {
     <div className="relative w-full h-full">
       <div ref={hostRef} className="absolute inset-0" />
       {loadingMsg && (
-        <div className="absolute inset-0 grid place-items-center pointer-events-none text-muted text-sm font-mono">
+        <div data-lab-loading className="absolute inset-0 grid place-items-center pointer-events-none text-muted text-sm font-mono">
           {loadingMsg}
         </div>
       )}

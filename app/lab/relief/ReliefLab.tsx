@@ -9,7 +9,7 @@ import { DEFAULT_REGION, REGIONS } from "./regions";
 const ReliefCanvas = dynamic(() => import("./ReliefCanvas"), {
   ssr: false,
   loading: () => (
-    <div className="absolute inset-0 grid place-items-center text-sm font-mono text-muted">
+    <div data-lab-loading className="absolute inset-0 grid place-items-center text-sm font-mono text-muted">
       unrolling the map…
     </div>
   ),
@@ -213,6 +213,7 @@ export default function ReliefLab() {
       {status && (
         <p
           aria-live="polite"
+          data-lab-loading={/loading|unrolling/i.test(status) ? "" : undefined}
           className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 font-mono text-xs tracking-widest uppercase text-muted"
         >
           {status}

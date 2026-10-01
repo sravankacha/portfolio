@@ -33,6 +33,18 @@ export function zoomFor(bbox: BBox, targetPx: number): number {
   return Math.max(2, Math.min(12, z));
 }
 
+/** Tile URLs loadTerrain will request for a region (used to warm the HTTP cache). */
+export function tileUrls(bbox: BBox, targetPx: number): string[] {
+  const [west, south, east, north] = bbox;
+  const z = zoomFor(bbox, targetPx);
+  const n = 2 ** z;
+  const tx0 = Math.floor(Math.floor(lonToX(west, z)) / TILE), tx1 = Math.floor((Math.ceil(lonToX(east, z)) - 1) / TILE);
+  const ty0 = Math.floor(Math.floor(latToY(north, z)) / TILE), ty1 = Math.floor((Math.ceil(latToY(south, z)) - 1) / TILE);
+  const out: string[] = [];
+  for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) out.push(TILE_URL(z, ((tx % n) + n) % n, ty));
+  return out;
+}
+
 async function loadTile(z: number, x: number, y: number): Promise<ImageBitmap | null> {
   try {
     const res = await fetch(TILE_URL(z, x, y));

@@ -2,9 +2,11 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { splitTo } from "../_components/SplitReveal";
 import { EXPERIMENTS } from "./_shared/experiments";
+import { prewarm } from "./_shared/prewarm";
+import { soundPref, tick } from "./_shared/sound";
 
 /* Lab index: a horizontal strip of preview cards that settles one card in the
    center. Cards ease in scale, depth and tilt by their distance from center.
@@ -48,6 +50,7 @@ export default function LabCarousel() {
       if (best !== activeRef.current) {
         activeRef.current = best;
         setActive(best);
+        tick(); // a detent click each time a card settles in the center
         // crossfade: paint the new preview on the hidden layer, then show it
         const thumb = EXPERIMENTS[best].thumb;
         setBg((p) => (p.showA ? { a: p.a, b: thumb, showA: false } : { a: thumb, b: p.b, showA: true }));
@@ -66,9 +69,13 @@ export default function LabCarousel() {
     };
   }, []);
 
-  // warm the route for the centered card so opening it is instant
+  // warm the centered card: route code now, heavy assets once it has rested
+  // there briefly (so flicking past cards doesn't download everything)
   useEffect(() => {
-    router.prefetch(`/lab/${EXPERIMENTS[active].slug}`);
+    const slug = EXPERIMENTS[active].slug;
+    router.prefetch(`/lab/${slug}`);
+    const t = window.setTimeout(() => prewarm(slug), 350);
+    return () => window.clearTimeout(t);
   }, [active, router]);
 
   const center = useCallback((i: number) => {
@@ -81,20 +88,38 @@ export default function LabCarousel() {
   const open = useCallback(
     (i: number) => {
       const x = EXPERIMENTS[i];
-      const img = cardRefs.current[i]?.querySelector(".lab-card__media");
-      if (img) splitTo(`/lab/${x.slug}`, x.thumb, img);
+      prewarm(x.slug);
+      const card = cardRefs.current[i]?.querySelector<HTMLElement>(".lab-card__hit");
+      if (card) splitTo(`/lab/${x.slug}`, x.thumb, card);
       else router.push(`/lab/${x.slug}`);
     },
     [router]
   );
 
-  const onKey = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowRight") center(Math.min(EXPERIMENTS.length - 1, active + 1));
-    else if (e.key === "ArrowLeft") center(Math.max(0, active - 1));
-    else if (e.key === "Enter" || e.key === " ") open(active);
-    else return;
-    e.preventDefault();
-  };
+  // arrow keys work anywhere on the page, not just when the strip has focus
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t?.closest("input, textarea, select, [contenteditable='true']")) return;
+      const i = activeRef.current;
+      const last = EXPERIMENTS.length - 1;
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") center(Math.min(last, i + 1));
+      else if (e.key === "ArrowLeft" || e.key === "ArrowUp") center(Math.max(0, i - 1));
+      else if (e.key === "Home") center(0);
+      else if (e.key === "End") center(last);
+      else if (e.key === "Enter" || e.key === " ") {
+        // let focused links and buttons (nav, dots) keep their own Enter/Space
+        if (t && t !== document.body && !t.closest(".lab-track")) return;
+        open(i);
+      } else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [center, open]);
+
+  const soundOn = useSyncExternalStore(soundPref.subscribe, soundPref.get, () => true);
 
   const x = EXPERIMENTS[active];
 
@@ -110,8 +135,7 @@ export default function LabCarousel() {
         ref={trackRef}
         className="lab-track"
         tabIndex={0}
-        onKeyDown={onKey}
-        aria-label="Use left and right arrow keys to browse, Enter to open"
+        aria-label="Use the arrow keys to browse, Enter to open"
       >
         {EXPERIMENTS.map((e, i) => (
           <li
@@ -178,7 +202,18 @@ export default function LabCarousel() {
           >
             →
           </button>
+          <button
+            type="button"
+            className="lab-stage__sound"
+            onClick={() => soundPref.set(!soundOn)}
+            aria-pressed={soundOn}
+            aria-label={soundOn ? "Mute sounds" : "Turn sounds on"}
+            title={soundOn ? "Mute sounds" : "Turn sounds on"}
+          >
+            {soundOn ? "♪" : "♪̸"}
+          </button>
         </div>
+        <p className="lab-stage__keys">← → to browse · enter to open</p>
       </div>
     </section>
   );
