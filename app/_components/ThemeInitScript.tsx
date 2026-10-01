@@ -14,8 +14,8 @@ const script = `
     } else if (stored && ids.indexOf(stored) !== -1) {
       theme = stored;
     } else {
-      theme = ids[Math.floor(Math.random() * ids.length)];
-      localStorage.setItem('${STORAGE_KEY}', theme);
+      // first visit: the editorial default (not stored, so it stays the default until they pick)
+      theme = '${DEFAULT_THEME}';
     }
     document.documentElement.dataset.theme = theme;
   } catch (e) {
