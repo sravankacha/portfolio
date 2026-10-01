@@ -266,13 +266,15 @@ const oceanVS = /* glsl */ `
   uniform float u_geometrySize;
   uniform sampler2D u_displacementMap;
   uniform float u_tiling; // 1 = one patch stretched over the mesh (david.li); n = true-scale tiles
+  uniform float u_worldUv; // voyage: sample the repeating patch by world position, in meters
 
   varying vec3 v_position;
   varying vec2 v_coordinates;
 
   void main() {
-    vec2 tuv = uv * u_tiling;
-    vec3 displacement = texture2D(u_displacementMap, tuv).rgb * (u_geometrySize / u_size / u_tiling);
+    vec2 tuv = u_worldUv > 0.5 ? vec2(position.x, -position.z) / u_size : uv * u_tiling;
+    float scale = u_worldUv > 0.5 ? 1.0 : u_geometrySize / u_size / u_tiling;
+    vec3 displacement = texture2D(u_displacementMap, tuv).rgb * scale;
     vec3 pos = position + displacement;
     v_position = pos;
     v_coordinates = tuv;
@@ -314,15 +316,9 @@ const oceanFS = /* glsl */ `
     vec3 outColor = hdr(color, u_exposure);
     if (u_depth > 0.0) {
       float h = v_position.y;
-      // deep water darkens toward ink-navy; light through thin crests glows turquoise
-      vec3 deep = vec3(0.01, 0.06, 0.13);
-      outColor = mix(deep, outColor, 0.55 + 0.45 * fresnel);
-      float crest = smoothstep(0.0, 3.5, h) * (1.0 - fresnel);
-      outColor += vec3(0.02, 0.22, 0.24) * crest * (0.4 + 0.6 * diffuse);
       // whitecaps: only crests that are both high and steep break into foam (fade with distance)
       float steep = 1.0 - normal.y;
-      float foam = smoothstep(0.42, 0.68, steep) * smoothstep(1.6, 3.2, h)
-                 + smoothstep(3.6, 5.0, h) * 0.35;
+      float foam = smoothstep(0.42, 0.68, steep) * smoothstep(1.6, 3.2, h);
       foam *= 1.0 - smoothstep(250.0, 900.0, length(u_cameraPosition.xz - v_position.xz));
       outColor = mix(outColor, vec3(0.93, 0.97, 1.0), clamp(foam, 0.0, 0.9));
     }
@@ -412,6 +408,11 @@ export default function FFTOceanCanvas({
       }
       if (cancelled || !containerRef.current) return;
 
+      // david.li runs a 512 grid; voyage matches it on desktop, phones keep 256
+      const mobile = window.matchMedia("(max-width: 768px)").matches;
+      const RES = voyage && !mobile ? 512 : RESOLUTION;
+      const LOG2_RES = Math.log2(RES);
+
       // Fullscreen quad scene used for every render-to-texture pass
       const quadScene = new THREE.Scene();
       const quadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -461,8 +462,9 @@ export default function FFTOceanCanvas({
       camera.lookAt(ORBIT);
       if (voyage) {
         // standing on a low cliff: horizon sits high in the frame, open sea below
-        camera.position.set(0, 24, 0);
-        camera.lookAt(0, -20, -220); // horizon ~a quarter down the screen
+        // looking down on the water like david.li's demo, horizon near the top edge
+        camera.position.set(0, 60, 0);
+        camera.lookAt(0, 0, -260);
       }
       if (specimen) {
         // A three-quarter view of a single patch, like a specimen on a table
@@ -508,22 +510,29 @@ export default function FFTOceanCanvas({
       };
 
       const initialSpectrumRT = new THREE.WebGLRenderTarget(
-        RESOLUTION,
-        RESOLUTION,
+        RES,
+        RES,
         { ...baseOpts, wrapS: THREE.RepeatWrapping, wrapT: THREE.RepeatWrapping },
       );
-      const pingPhaseRT = new THREE.WebGLRenderTarget(RESOLUTION, RESOLUTION, baseOpts);
-      const pongPhaseRT = new THREE.WebGLRenderTarget(RESOLUTION, RESOLUTION, baseOpts);
-      const spectrumRT = new THREE.WebGLRenderTarget(RESOLUTION, RESOLUTION, baseOpts);
-      const displacementRT = new THREE.WebGLRenderTarget(RESOLUTION, RESOLUTION, linOpts);
-      const normalRT = new THREE.WebGLRenderTarget(RESOLUTION, RESOLUTION, linOpts);
+      const pingPhaseRT = new THREE.WebGLRenderTarget(RES, RES, baseOpts);
+      const pongPhaseRT = new THREE.WebGLRenderTarget(RES, RES, baseOpts);
+      const spectrumRT = new THREE.WebGLRenderTarget(RES, RES, baseOpts);
+      const displacementRT = new THREE.WebGLRenderTarget(RES, RES, linOpts);
+      const normalRT = new THREE.WebGLRenderTarget(
+        RES,
+        RES,
+        voyage
+          ? { ...linOpts, generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter }
+          : linOpts,
+      );
       if (voyage) {
         for (const t of [displacementRT.texture, normalRT.texture]) {
           t.wrapS = t.wrapT = THREE.RepeatWrapping;
         }
+        normalRT.texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
       }
-      const pingFFTRT = new THREE.WebGLRenderTarget(RESOLUTION, RESOLUTION, baseOpts);
-      const pongFFTRT = new THREE.WebGLRenderTarget(RESOLUTION, RESOLUTION, baseOpts);
+      const pingFFTRT = new THREE.WebGLRenderTarget(RES, RES, baseOpts);
+      const pongFFTRT = new THREE.WebGLRenderTarget(RES, RES, baseOpts);
 
       // -- Seed pingPhase with random phases [0, 2pi). gl_FragCoord-based so
       // we don't depend on the varying mechanic --
@@ -531,7 +540,7 @@ export default function FFTOceanCanvas({
         const seedMat = new THREE.ShaderMaterial({
           uniforms: {
             u_seed: { value: Math.random() * 1000 },
-            u_res: { value: RESOLUTION },
+            u_res: { value: RES },
           },
           vertexShader: fullscreenVS,
           // Random starting phase per wave — the spectrum itself is deterministic,
@@ -563,20 +572,20 @@ export default function FFTOceanCanvas({
 
       const initialSpectrumMat = mkMat(initialSpectrumFS, {
         u_wind: { value: new THREE.Vector2() },
-        u_resolution: { value: RESOLUTION },
+        u_resolution: { value: RES },
         u_size: { value: paramsRef.current.size },
       });
       const phaseMat = mkMat(phaseFS, {
         u_phases: { value: null },
         u_deltaTime: { value: 0 },
-        u_resolution: { value: RESOLUTION },
+        u_resolution: { value: RES },
         u_size: { value: paramsRef.current.size },
       });
       const spectrumMat = mkMat(spectrumFS, {
         u_phases: { value: null },
         u_initialSpectrum: { value: initialSpectrumRT.texture },
         u_size: { value: paramsRef.current.size },
-        u_resolution: { value: RESOLUTION },
+        u_resolution: { value: RES },
         u_choppiness: { value: paramsRef.current.choppiness },
       });
       const horizFFTMat = new THREE.ShaderMaterial({
@@ -584,7 +593,7 @@ export default function FFTOceanCanvas({
         fragmentShader: "#define HORIZONTAL\n" + subtransformFSBase,
         uniforms: {
           u_input: { value: null },
-          u_transformSize: { value: RESOLUTION },
+          u_transformSize: { value: RES },
           u_subtransformSize: { value: 2 },
         },
       });
@@ -593,13 +602,13 @@ export default function FFTOceanCanvas({
         fragmentShader: subtransformFSBase,
         uniforms: {
           u_input: { value: null },
-          u_transformSize: { value: RESOLUTION },
+          u_transformSize: { value: RES },
           u_subtransformSize: { value: 2 },
         },
       });
       const normalMapMat = mkMat(normalMapFS, {
         u_displacementMap: { value: displacementRT.texture },
-        u_resolution: { value: RESOLUTION },
+        u_resolution: { value: RES },
         u_size: { value: paramsRef.current.size },
       });
 
@@ -616,14 +625,44 @@ export default function FFTOceanCanvas({
       // -- Ocean mesh --
       // Specimen: exactly one FFT patch, so displacement maps 1:1 onto the mesh
       const geometrySize = specimen ? paramsRef.current.size : GEOMETRY_SIZE;
-      const geoRes = voyage ? 384 : GEOMETRY_RESOLUTION;
-      const oceanGeom = new THREE.PlaneGeometry(
-        geometrySize,
-        geometrySize,
-        geoRes - 1,
-        geoRes - 1,
-      );
-      oceanGeom.rotateX(-Math.PI / 2);
+      let oceanGeom: THREENS.BufferGeometry;
+      if (voyage) {
+        // Radial grid around the (fixed) camera: rings spaced exponentially, so
+        // vertices are ~1 m apart near the ship and stretch out toward the horizon.
+        const NA = mobile ? 260 : 520, NR = mobile ? 220 : 420;
+        const R0 = 40, R1 = 4200, A0 = -1.45, A1 = 1.45; // radians either side of -z
+        const pos = new Float32Array(NA * NR * 3);
+        for (let r = 0; r < NR; r++) {
+          const rad = R0 * Math.pow(R1 / R0, r / (NR - 1));
+          for (let a = 0; a < NA; a++) {
+            const ang = A0 + ((A1 - A0) * a) / (NA - 1);
+            const i = (r * NA + a) * 3;
+            pos[i] = Math.sin(ang) * rad;
+            pos[i + 2] = -Math.cos(ang) * rad;
+          }
+        }
+        const index = new Uint32Array((NA - 1) * (NR - 1) * 6);
+        let k = 0;
+        for (let r = 0; r < NR - 1; r++)
+          for (let a = 0; a < NA - 1; a++) {
+            const i0 = r * NA + a, i1 = i0 + 1, i2 = i0 + NA, i3 = i2 + 1;
+            // counter-clockwise seen from above, so the faces point up
+            index[k++] = i0; index[k++] = i1; index[k++] = i2;
+            index[k++] = i1; index[k++] = i3; index[k++] = i2;
+          }
+        oceanGeom = new THREE.BufferGeometry();
+        oceanGeom.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+        oceanGeom.setIndex(new THREE.BufferAttribute(index, 1));
+        oceanGeom.computeBoundingSphere();
+      } else {
+        oceanGeom = new THREE.PlaneGeometry(
+          geometrySize,
+          geometrySize,
+          GEOMETRY_RESOLUTION - 1,
+          GEOMETRY_RESOLUTION - 1,
+        );
+        oceanGeom.rotateX(-Math.PI / 2);
+      }
 
       const oceanMat = new THREE.ShaderMaterial({
         vertexShader: oceanVS,
@@ -634,19 +673,20 @@ export default function FFTOceanCanvas({
           u_size: { value: paramsRef.current.size },
           u_geometrySize: { value: geometrySize },
           // voyage tiles the patch at real scale so waves stay wave-sized near a low camera
-          u_tiling: { value: voyage ? geometrySize / paramsRef.current.size : 1 },
+          u_tiling: { value: 1 },
+          u_worldUv: { value: voyage ? 1 : 0 },
           u_cameraPosition: { value: new THREE.Vector3() },
           u_oceanColor: { value: new THREE.Color(0.004, 0.016, 0.047) },
           // a low camera sees mostly grazing reflections; voyage dims the sky so they don't blow out
-          u_skyColor: { value: voyage ? new THREE.Color(1.6, 3.4, 5.2) : new THREE.Color(3.2, 9.6, 12.8) },
+          u_skyColor: { value: new THREE.Color(3.2, 9.6, 12.8) },
           u_sunDirection: {
             value: new THREE.Vector3(-1.0, 1.0, 1.0).normalize(),
           },
-          u_exposure: { value: 0.35 },
+          u_exposure: { value: voyage ? 0.27 : 0.35 }, // voyage sits under text; a touch deeper
           u_alpha: { value: transparent ? 0.97 : 1.0 },
           u_fogColor: { value: new THREE.Color(0xdbe9f1) },
-          u_fogNear: { value: voyage ? 450 : 1e6 },
-          u_fogFar: { value: voyage ? 1900 : 2e6 },
+          u_fogNear: { value: voyage ? 1100 : 1e6 },
+          u_fogFar: { value: voyage ? 3800 : 2e6 },
           u_depth: { value: voyage ? 1 : 0 },
         },
         transparent,
@@ -659,16 +699,17 @@ export default function FFTOceanCanvas({
       const probe = new Uint16Array(4);
       const tiling = voyage ? geometrySize / paramsRef.current.size : 1;
       const sampleHeight = (x: number, z: number) => {
-        const u = ((x + geometrySize / 2) / geometrySize) * tiling;
-        const v = ((-z + geometrySize / 2) / geometrySize) * tiling;
-        const tx = Math.floor((u - Math.floor(u)) * RESOLUTION);
-        const ty = Math.floor((v - Math.floor(v)) * RESOLUTION);
+        const size = paramsRef.current.size;
+        const u = voyage ? x / size : ((x + geometrySize / 2) / geometrySize) * tiling;
+        const v = voyage ? -z / size : ((-z + geometrySize / 2) / geometrySize) * tiling;
+        const tx = Math.floor((u - Math.floor(u)) * RES);
+        const ty = Math.floor((v - Math.floor(v)) * RES);
         try {
           renderer.readRenderTargetPixels(displacementRT, tx, ty, 1, 1, probe);
         } catch {
           return 0;
         }
-        return THREE.DataUtils.fromHalfFloat(probe[1]) * (geometrySize / paramsRef.current.size / tiling);
+        return THREE.DataUtils.fromHalfFloat(probe[1]) * (voyage ? 1 : geometrySize / size / tiling);
       };
 
       // Voyage: daylight sky and whatever the caller sails on the water
@@ -738,7 +779,7 @@ export default function FFTOceanCanvas({
       // second half vert. Source = spectrum on i=0. Output = displacement
       // on i=iterations-1. Even i writes to pingFFT, odd to pongFFT.
       const runFFT = () => {
-        const iterations = LOG2_RESOLUTION * 2;
+        const iterations = LOG2_RES * 2;
         let mat = horizFFTMat;
         for (let i = 0; i < iterations; i++) {
           let target: THREENS.WebGLRenderTarget;

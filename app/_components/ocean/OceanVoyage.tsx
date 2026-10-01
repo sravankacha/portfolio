@@ -5,6 +5,8 @@ import { useCallback } from "react";
 import type { OceanSceneHook } from "../FFTOceanCanvas";
 import { useThemeId } from "../useThemeId";
 import { helm } from "./helm";
+import type * as THREENS from "three";
+import { skyEnvironment } from "./skyEnvironment";
 import { buildShip, SHIP_HULL } from "./ship";
 import { buildSplash } from "./splash";
 
@@ -18,20 +20,38 @@ const WIND_SPEED = 14; // m/s
 export default function OceanVoyage() {
   const theme = useThemeId();
 
-  const sceneHook = useCallback<OceanSceneHook>(({ THREE, scene, camera, setWind, sampleHeight }) => {
-    const hemi = new THREE.HemisphereLight(0xdcecff, 0x23384a, 1.3);
-    const sun = new THREE.DirectionalLight(0xfff1dc, 2.4);
+  const sceneHook = useCallback<OceanSceneHook>(({ THREE, scene, camera, renderer, setWind, sampleHeight }) => {
+    const hemi = new THREE.HemisphereLight(0xdcecff, 0x23384a, 1.0);
+    const sun = new THREE.DirectionalLight(0xfff1dc, 2.6);
+    // soft studio reflections for gilding and varnished wood (ship materials only)
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envScene = skyEnvironment(THREE);
+    const env = pmrem.fromScene(envScene, 0.02).texture;
+    envScene.traverse((o) => {
+      const m = o as THREENS.Mesh;
+      if (m.isMesh) {
+        m.geometry.dispose();
+        (m.material as THREENS.Material).dispose();
+      }
+    });
     sun.position.set(-300, 300, 300); // matches the ocean shader's sun
     scene.add(hemi, sun);
 
     const ship = buildShip(THREE);
+    ship.root.traverse((o) => {
+      const m = (o as THREENS.Mesh).material as THREENS.MeshStandardMaterial | undefined;
+      if (m && "envMap" in m) {
+        m.envMap = env;
+        m.envMapIntensity = 0.55;
+      }
+    });
     scene.add(ship.root);
     const splash = buildSplash(THREE, SHIP_HULL);
     scene.add(...splash.objects);
     // buoyancy state (smoothed so a 36 m hull has some inertia)
     const float = { y: 0, pitch: 0, roll: 0, bowRel: 0, lastHeading: helm.heading };
     const HALF_L = SHIP_HULL.length * 0.4;
-    const HALF_B = 4.4;
+    const HALF_B = 5.0;
 
     const ray = new THREE.Raycaster();
     const ndc = new THREE.Vector2();
@@ -91,6 +111,8 @@ export default function OceanVoyage() {
         scene.remove(ship.root, hemi, sun, ...splash.objects);
         ship.dispose();
         splash.dispose();
+        env.dispose();
+        pmrem.dispose();
       },
     };
   }, []);
