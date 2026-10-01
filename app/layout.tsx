@@ -6,6 +6,7 @@ import Footer from "./_components/Footer";
 import HideOnExperimentRoute from "./_components/HideOnExperimentRoute";
 import ThemeInitScript from "./_components/ThemeInitScript";
 import OrigamiHeroGate from "./_components/OrigamiHeroGate";
+import OceanVoyage from "./_components/ocean/OceanVoyage";
 import Analytics from "./_components/Analytics";
 import { profile } from "./_data/profile";
 
@@ -133,6 +134,7 @@ export default function RootLayout({
         <Analytics />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground relative">
+        <OceanVoyage />
         <OrigamiHeroGate />
         <div className="flex flex-col flex-1 relative z-10">
           <HideOnExperimentRoute>

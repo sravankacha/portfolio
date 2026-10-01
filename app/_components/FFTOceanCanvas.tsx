@@ -265,15 +265,17 @@ const oceanVS = /* glsl */ `
   uniform float u_size;
   uniform float u_geometrySize;
   uniform sampler2D u_displacementMap;
+  uniform float u_tiling; // 1 = one patch stretched over the mesh (david.li); n = true-scale tiles
 
   varying vec3 v_position;
   varying vec2 v_coordinates;
 
   void main() {
-    vec3 displacement = texture2D(u_displacementMap, uv).rgb * (u_geometrySize / u_size);
+    vec2 tuv = uv * u_tiling;
+    vec3 displacement = texture2D(u_displacementMap, tuv).rgb * (u_geometrySize / u_size / u_tiling);
     vec3 pos = position + displacement;
     v_position = pos;
-    v_coordinates = uv;
+    v_coordinates = tuv;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
   }
 `;
@@ -288,6 +290,9 @@ const oceanFS = /* glsl */ `
   uniform vec3 u_sunDirection;
   uniform float u_exposure;
   uniform float u_alpha;
+  uniform vec3 u_fogColor;
+  uniform float u_fogNear;
+  uniform float u_fogFar;
 
   varying vec3 v_position;
   varying vec2 v_coordinates;
@@ -305,7 +310,10 @@ const oceanFS = /* glsl */ `
     float diffuse = clamp(dot(normal, normalize(u_sunDirection)), 0.0, 1.0);
     vec3 water = (1.0 - fresnel) * u_oceanColor * u_skyColor * diffuse;
     vec3 color = sky + water;
-    gl_FragColor = vec4(hdr(color, u_exposure), u_alpha);
+    vec3 outColor = hdr(color, u_exposure);
+    // haze toward the horizon so the mesh edge melts into the sky
+    float fog = smoothstep(u_fogNear, u_fogFar, length(u_cameraPosition.xz - v_position.xz));
+    gl_FragColor = vec4(mix(outColor, u_fogColor, fog), u_alpha);
   }
 `;
 
@@ -325,6 +333,15 @@ const DEFAULTS: FFTParams = {
   choppiness: 2.3,
 };
 
+/** Lets a caller add objects to the ocean scene and steer the wind. */
+export type OceanSceneHook = (ctx: {
+  THREE: typeof THREENS;
+  scene: THREENS.Scene;
+  camera: THREENS.PerspectiveCamera;
+  renderer: THREENS.WebGLRenderer;
+  setWind: (x: number, z: number) => void;
+}) => { tick: (t: number, dt: number) => void; dispose: () => void };
+
 /** Maps between world space (y up, patch centered at the origin) and canvas pixels. */
 export type OceanView = {
   width: number;
@@ -339,14 +356,19 @@ export default function FFTOceanCanvas({
   transparent = false,
   variant = "backdrop",
   onView,
+  sceneHook,
 }: {
   params?: Partial<FFTParams>;
   transparent?: boolean;
   /** backdrop: endless sea filling the screen. specimen: one patch floating on the page. */
-  variant?: "backdrop" | "specimen";
+  variant?: "backdrop" | "specimen" | "voyage";
   onView?: (view: OceanView) => void;
+  /** voyage: add objects (the ship) to the scene; read once at mount */
+  sceneHook?: OceanSceneHook;
 }) {
   const specimen = variant === "specimen";
+  const voyage = variant === "voyage";
+  const sceneHookRef = useRef(sceneHook);
   const onViewRef = useRef(onView);
   useEffect(() => {
     onViewRef.current = onView;
@@ -407,7 +429,7 @@ export default function FFTOceanCanvas({
 
       // -- Scene --
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(specimen ? 28 : 60, 1, 1, 12000);
+      const camera = new THREE.PerspectiveCamera(specimen ? 28 : voyage ? 42 : 60, 1, 1, 12000);
       // Steeper downward look so the horizon sits above the viewport — the
       // visible frame is filled with water instead of a sliver of sky.
       const ORBIT = new THREE.Vector3(0, 0, -200);
@@ -420,6 +442,11 @@ export default function FFTOceanCanvas({
         camDist * Math.cos(elev) * Math.cos(-az) + ORBIT.z,
       );
       camera.lookAt(ORBIT);
+      if (voyage) {
+        // standing on a low cliff: horizon sits high in the frame, open sea below
+        camera.position.set(0, 24, 0);
+        camera.lookAt(0, -20, -220); // horizon ~a quarter down the screen
+      }
       if (specimen) {
         // A three-quarter view of a single patch, like a specimen on a table
         const s = paramsRef.current.size;
@@ -473,6 +500,11 @@ export default function FFTOceanCanvas({
       const spectrumRT = new THREE.WebGLRenderTarget(RESOLUTION, RESOLUTION, baseOpts);
       const displacementRT = new THREE.WebGLRenderTarget(RESOLUTION, RESOLUTION, linOpts);
       const normalRT = new THREE.WebGLRenderTarget(RESOLUTION, RESOLUTION, linOpts);
+      if (voyage) {
+        for (const t of [displacementRT.texture, normalRT.texture]) {
+          t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        }
+      }
       const pingFFTRT = new THREE.WebGLRenderTarget(RESOLUTION, RESOLUTION, baseOpts);
       const pongFFTRT = new THREE.WebGLRenderTarget(RESOLUTION, RESOLUTION, baseOpts);
 
@@ -567,11 +599,12 @@ export default function FFTOceanCanvas({
       // -- Ocean mesh --
       // Specimen: exactly one FFT patch, so displacement maps 1:1 onto the mesh
       const geometrySize = specimen ? paramsRef.current.size : GEOMETRY_SIZE;
+      const geoRes = voyage ? 384 : GEOMETRY_RESOLUTION;
       const oceanGeom = new THREE.PlaneGeometry(
         geometrySize,
         geometrySize,
-        GEOMETRY_RESOLUTION - 1,
-        GEOMETRY_RESOLUTION - 1,
+        geoRes - 1,
+        geoRes - 1,
       );
       oceanGeom.rotateX(-Math.PI / 2);
 
@@ -583,19 +616,53 @@ export default function FFTOceanCanvas({
           u_normalMap: { value: normalRT.texture },
           u_size: { value: paramsRef.current.size },
           u_geometrySize: { value: geometrySize },
+          // voyage tiles the patch at real scale so waves stay wave-sized near a low camera
+          u_tiling: { value: voyage ? geometrySize / paramsRef.current.size : 1 },
           u_cameraPosition: { value: new THREE.Vector3() },
           u_oceanColor: { value: new THREE.Color(0.004, 0.016, 0.047) },
-          u_skyColor: { value: new THREE.Color(3.2, 9.6, 12.8) },
+          // a low camera sees mostly grazing reflections; voyage dims the sky so they don't blow out
+          u_skyColor: { value: voyage ? new THREE.Color(1.5, 2.9, 4.1) : new THREE.Color(3.2, 9.6, 12.8) },
           u_sunDirection: {
             value: new THREE.Vector3(-1.0, 1.0, 1.0).normalize(),
           },
           u_exposure: { value: 0.35 },
           u_alpha: { value: transparent ? 0.97 : 1.0 },
+          u_fogColor: { value: new THREE.Color(0xdbe9f1) },
+          u_fogNear: { value: voyage ? 450 : 1e6 },
+          u_fogFar: { value: voyage ? 1900 : 2e6 },
         },
         transparent,
       });
       const oceanMesh = new THREE.Mesh(oceanGeom, oceanMat);
       scene.add(oceanMesh);
+
+      // Voyage: daylight sky and whatever the caller sails on the water
+      let hook: ReturnType<OceanSceneHook> | null = null;
+      if (voyage) {
+        const sky = document.createElement("canvas");
+        sky.width = 2;
+        sky.height = 256;
+        const sg = sky.getContext("2d")!;
+        const grad = sg.createLinearGradient(0, 0, 0, 256);
+        grad.addColorStop(0, "#6fa7d6");
+        grad.addColorStop(0.55, "#a9cbe6");
+        grad.addColorStop(1, "#dbe9f1");
+        sg.fillStyle = grad;
+        sg.fillRect(0, 0, 2, 256);
+        const skyTex = new THREE.CanvasTexture(sky);
+        skyTex.colorSpace = THREE.SRGBColorSpace;
+        scene.background = skyTex;
+        hook =
+          sceneHookRef.current?.({
+            THREE,
+            scene,
+            camera,
+            renderer,
+            setWind: (x, z) => {
+              paramsRef.current = { ...paramsRef.current, windX: x, windZ: z };
+            },
+          }) ?? null;
+      }
 
       // -- Sizing --
       const resize = () => {
@@ -718,6 +785,7 @@ export default function FFTOceanCanvas({
         renderPass(normalRT, normalMapMat);
 
         // 5) render scene
+        hook?.tick(clock.elapsedTime, dt);
         oceanMat.uniforms.u_cameraPosition.value.copy(camera.position);
         renderer.setRenderTarget(null);
         renderer.render(scene, camera);
@@ -739,6 +807,7 @@ export default function FFTOceanCanvas({
 
       cleanup = () => {
         cancelAnimationFrame(frameId);
+        hook?.dispose();
         io.disconnect();
         ro.disconnect();
         window.removeEventListener("resize", resize);
@@ -773,7 +842,7 @@ export default function FFTOceanCanvas({
       cleanup();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transparent, specimen]);
+  }, [transparent, specimen, voyage]);
 
   return <div ref={containerRef} className="ocean-canvas-host" />;
 }

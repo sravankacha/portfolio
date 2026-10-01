@@ -1,5 +1,5 @@
 import GlassBlob from "./GlassBlob";
-import OceanSpecimen from "./OceanSpecimen";
+import ShipHelm from "./ocean/ShipHelm";
 
 /** Per-theme hero art. CSS shows only the active theme's slot. */
 export default function HeroArt({ className = "" }: { className?: string }) {
@@ -11,7 +11,7 @@ export default function HeroArt({ className = "" }: { className?: string }) {
         <GlassBlob />
       </div>
       <div className="hero-art__ocean">
-        <OceanSpecimen />
+        <ShipHelm />
       </div>
       <div className="hero-art__diner" aria-hidden="true">
         <div>
